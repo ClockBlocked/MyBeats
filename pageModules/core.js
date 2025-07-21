@@ -15,7 +15,7 @@ import {
   enhancedThemeToggle,
   getNavbarState,
   setNavbarState
-} from '../pageModules/navBar.js';
+} from './navBar.js';
 
 
 
