@@ -8,7 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.css" rel="stylesheet">
     <link href="https://test.koders.cloud/core.css" rel="stylesheet">
     <link href="https://dev.wuaze.com/styleSheets/fonts.css" rel="stylesheet">
-    <link href="./dev.css" rel="stylesheet">
+    <link href="./navBar.css" rel="stylesheet">
 </head>
 <body class="min-h-screen transition-colors duration-300">
     <div id="pageWrapper">
@@ -261,99 +261,112 @@
     </div>
 </div>
 
-<!-- Enhanced Now Playing Popup -->
-<div class="now-playing-popup now-playing-card" id="now-playing-popup">
-    <div class="popup-header">
-        <h3 class="popup-title">Now Playing</h3>
-        <button class="popup-close" id="popup-close">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
-        </button>
+<!-- Replace the existing now-playing-popup in index.html with this -->
+<div class="now-playing-popup" id="now-playing-popup">
+  <div class="popup-header">
+    <h3 class="popup-title">Now Playing</h3>
+    <button class="popup-close" id="popup-close">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+  
+  <img id="popup-album-cover" src="" alt="Album Cover" class="popup-album-cover">
+  
+  <div class="popup-song-info">
+    <h4 id="popup-song-title" class="popup-song-title"></h4>
+    <p id="popup-artist-name" class="popup-artist-name"></p>
+    <p id="popup-album-name" class="popup-album-name"></p>
+  </div>
+  
+  <div class="popup-progress">
+    <div class="progress-time">
+      <span id="popup-current-time">0:00</span>
+      <span id="popup-total-time">0:00</span>
     </div>
-    
-    <img id="popup-album-cover" src="" alt="Album Cover" class="popup-album-cover">
-    
-    <div class="popup-song-info">
-        <h4 id="popup-song-title" class="popup-song-title"></h4>
-        <p id="popup-artist-name" class="popup-artist-name"></p>
-        <p id="popup-album-name" class="popup-album-name"></p>
+    <div class="progress-bar" id="popup-progress-bar">
+      <div class="progress-fill" id="popup-progress-fill" style="width: 0%">
+        <div class="progress-thumb" id="popup-progress-thumb"></div>
+      </div>
     </div>
+  </div>
+  
+  <div class="popup-controls">
+    <button class="popup-control-btn" id="popup-shuffle-btn" title="Shuffle">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+      </svg>
+    </button>
     
-    <div class="popup-progress">
-        <div class="progress-time">
-            <span id="popup-current-time">0:00</span>
-            <span id="popup-total-time">0:00</span>
-        </div>
-        <div class="progress-bar" id="popup-progress-bar">
-            <div class="progress-fill" id="popup-progress-fill" style="width: 0%">
-                <div class="progress-thumb" id="popup-progress-thumb"></div>
-            </div>
-        </div>
-    </div>
+    <button class="popup-control-btn" id="popup-prev-btn" title="Previous">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
+      </svg>
+    </button>
     
-    <div class="popup-controls">
-        <button class="control-button" id="popup-shuffle-btn" title="Shuffle">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-            </svg>
-        </button>
-        
-        <button class="control-button" id="popup-prev-btn" title="Previous">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
-            </svg>
-        </button>
-        
-        <button class="control-button play-pause" id="popup-play-pause-btn">
-            <svg id="popup-play-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-            </svg>
-            <svg id="popup-pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-            </svg>
-        </button>
-        
-        <button class="control-button" id="popup-next-btn" title="Next">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
-            </svg>
-        </button>
-        
-        <button class="control-button" id="popup-repeat-btn" title="Repeat">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-            </svg>
-        </button>
-    </div>
+    <button class="popup-control-btn play-pause" id="popup-play-pause-btn">
+      <svg id="popup-play-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+      </svg>
+      <svg id="popup-pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+    </button>
     
-    <div class="popup-actions">
-        <button class="action-button favorite" id="popup-favorite-btn" title="Add to Favorites">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-            </svg>
-        </button>
-        
-        <button class="action-button" id="popup-queue-btn" title="View Queue">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-            </svg>
-        </button>
-        
-        <button class="action-button" id="popup-share-btn" title="Share">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
-            </svg>
-        </button>
-        
-        <button class="action-button" id="popup-more-btn" title="More Options">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-            </svg>
-        </button>
-    </div>
+    <button class="popup-control-btn" id="popup-next-btn" title="Next">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
+      </svg>
+    </button>
+    
+    <button class="popup-control-btn" id="popup-repeat-btn" title="Repeat">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+      </svg>
+    </button>
+  </div>
+  
+  <div class="popup-actions">
+    <button class="popup-action-btn favorite" id="popup-favorite-btn" title="Add to Favorites">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+      </svg>
+    </button>
+    
+    <button class="popup-action-btn" id="popup-queue-btn" title="View Queue">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+      </svg>
+    </button>
+    
+    <button class="popup-action-btn" id="popup-share-btn" title="Share">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
+      </svg>
+    </button>
+    
+    <button class="popup-action-btn" id="popup-more-btn" title="More Options">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+      </svg>
+    </button>
+  </div>
+  
+  <div class="popup-tabs">
+    <button class="popup-tab active" data-tab="now-playing">Now Playing</button>
+    <button class="popup-tab" data-tab="queue">Up Next</button>
+    <button class="popup-tab" data-tab="recent">Recent Plays</button>
+  </div>
+  
+  <div class="popup-tab-content" data-tab="queue">
+    <ul class="popup-song-list" id="popup-queue-list"></ul>
+  </div>
+  
+  <div class="popup-tab-content" data-tab="recent">
+    <ul class="popup-song-list" id="popup-recent-list"></ul>
+  </div>
 </div>
-
 
 
 
@@ -385,4 +398,3 @@
     </div>
 </body>
 </html>
-
