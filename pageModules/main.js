@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Initialize the enhanced app with navbar module
-    if (typeof window.initializeApp === 'function') {
-        window.initializeApp();
+    if (typeof window.initializeEnhancedApp === 'function') {
+        window.initializeEnhancedApp();
         console.log('✅ Enhanced Music Player with Navbar Module loaded successfully');
         console.log('📊 Music library loaded with', window.music?.length || 0, 'artists');
         console.log('🎛️ Navbar functions available:', Object.keys(window.navbarModule || {}));
