@@ -669,3 +669,405 @@ export function setNavbarState(state) {
   if (state.playlists !== undefined) playlists = state.playlists;
   if (state.favoriteArtists !== undefined) favoriteArtists = state.favoriteArtists;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Enhanced Now Playing Controller with Tab System and Auto-Return
+class EnhancedNowPlayingController {
+  constructor() {
+    this.activeTab = 'nowPlaying';
+    this.inactivityTimer = null;
+    this.scrollPosition = 0;
+    this.isScrolling = false;
+    this.tabs = {
+      nowPlaying: { element: null, content: null },
+      upNext: { element: null, content: null },
+      recentPlays: { element: null, content: null }
+    };
+    
+    this.init();
+  }
+  
+  init() {
+    this.createTabSystem();
+    this.bindEvents();
+    this.startInactivityTimer();
+  }
+  
+  createTabSystem() {
+    const popup = document.getElementById('now-playing-popup');
+    if (!popup) return;
+    
+    // Create tab structure
+    const tabsHTML = `
+      <div class="popup-tabs">
+        <button class="popup-tab active" data-tab="nowPlaying">Now Playing</button>
+        <button class="popup-tab" data-tab="upNext">Up Next</button>
+        <button class="popup-tab" data-tab="recentPlays">Recent Plays</button>
+      </div>
+      <div class="popup-content">
+        <div class="tab-content active" id="nowPlaying-content">
+          <!-- Now playing content will be here -->
+        </div>
+        <div class="tab-content hidden" id="upNext-content">
+          <div id="queue-list-popup"></div>
+        </div>
+        <div class="tab-content hidden" id="recentPlays-content">
+          <div id="recent-list-popup"></div>
+        </div>
+      </div>
+      <div class="scroll-indicator">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+        </svg>
+        Scroll for more
+      </div>
+    `;
+    
+    // Insert after song info
+    const songInfo = popup.querySelector('.popup-song-info');
+    if (songInfo) {
+      songInfo.insertAdjacentHTML('afterend', tabsHTML);
+    }
+    
+    // Cache tab elements
+    this.tabs.nowPlaying.element = popup.querySelector('[data-tab="nowPlaying"]');
+    this.tabs.upNext.element = popup.querySelector('[data-tab="upNext"]');
+    this.tabs.recentPlays.element = popup.querySelector('[data-tab="recentPlays"]');
+    
+    this.tabs.nowPlaying.content = popup.querySelector('#nowPlaying-content');
+    this.tabs.upNext.content = popup.querySelector('#upNext-content');
+    this.tabs.recentPlays.content = popup.querySelector('#recentPlays-content');
+  }
+  
+  bindEvents() {
+    const popup = document.getElementById('now-playing-popup');
+    if (!popup) return;
+    
+    // Tab click events
+    Object.values(this.tabs).forEach(tab => {
+      if (tab.element) {
+        tab.element.addEventListener('click', (e) => {
+          const tabName = e.target.dataset.tab;
+          this.switchTab(tabName);
+          this.resetInactivityTimer();
+        });
+      }
+    });
+    
+    // Scroll detection
+    popup.addEventListener('scroll', (e) => {
+      this.handleScroll(e);
+    });
+    
+    // Mouse/touch activity detection
+    popup.addEventListener('mousemove', () => this.resetInactivityTimer());
+    popup.addEventListener('touchstart', () => this.resetInactivityTimer());
+    popup.addEventListener('click', () => this.resetInactivityTimer());
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (popup.classList.contains('show')) {
+        this.handleKeyboard(e);
+      }
+    });
+  }
+  
+  handleScroll(e) {
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    const scrollPercentage = scrollTop / (scrollHeight - clientHeight);
+    
+    // If scrolled down significantly and currently on nowPlaying, switch to upNext
+    if (scrollPercentage > 0.3 && this.activeTab === 'nowPlaying') {
+      this.switchTab('upNext');
+    }
+    
+    this.resetInactivityTimer();
+  }
+  
+  switchTab(tabName, skipAnimation = false) {
+    if (tabName === this.activeTab || !this.tabs[tabName]) return;
+    
+    const currentTab = this.tabs[this.activeTab];
+    const newTab = this.tabs[tabName];
+    
+    // Update tab buttons
+    Object.values(this.tabs).forEach(tab => {
+      if (tab.element) {
+        tab.element.classList.remove('active');
+      }
+    });
+    newTab.element.classList.add('active');
+    
+    if (skipAnimation) {
+      // Instant switch
+      currentTab.content.classList.add('hidden');
+      newTab.content.classList.remove('hidden');
+      this.activeTab = tabName;
+      this.updateTabContent(tabName);
+    } else {
+      // Animated transition
+      currentTab.content.classList.add('fade-out');
+      
+      setTimeout(() => {
+        currentTab.content.classList.add('hidden');
+        currentTab.content.classList.remove('fade-out');
+        
+        newTab.content.classList.remove('hidden');
+        newTab.content.classList.add('fade-in');
+        
+        setTimeout(() => {
+          newTab.content.classList.remove('fade-in');
+        }, 300);
+        
+        this.activeTab = tabName;
+        this.updateTabContent(tabName);
+      }, 150);
+    }
+  }
+  
+  updateTabContent(tabName) {
+    switch (tabName) {
+      case 'nowPlaying':
+        this.updateNowPlayingContent();
+        break;
+      case 'upNext':
+        this.updateQueueContent();
+        break;
+      case 'recentPlays':
+        this.updateRecentContent();
+        break;
+    }
+  }
+  
+  updateNowPlayingContent() {
+    // Move existing now playing elements to the tab content
+    const content = this.tabs.nowPlaying.content;
+    const albumCover = document.getElementById('popup-album-cover');
+    const songInfo = document.querySelector('.popup-song-info');
+    const progress = document.querySelector('.popup-progress');
+    const controls = document.querySelector('.popup-controls');
+    const actions = document.querySelector('.popup-actions');
+    
+    if (content && !content.querySelector('.popup-album-cover')) {
+      content.innerHTML = '';
+      if (albumCover) content.appendChild(albumCover.cloneNode(true));
+      if (songInfo) content.appendChild(songInfo.cloneNode(true));
+      if (progress) content.appendChild(progress.cloneNode(true));
+      if (controls) content.appendChild(controls.cloneNode(true));
+      if (actions) content.appendChild(actions.cloneNode(true));
+    }
+  }
+  
+  updateQueueContent() {
+    const content = document.getElementById('queue-list-popup');
+    if (!content) return;
+    
+    const queue = window.queue || [];
+    
+    if (queue.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+            </svg>
+          </div>
+          <div class="empty-state-text">No songs in queue<br>Add some music to get started!</div>
+        </div>
+      `;
+      return;
+    }
+    
+    content.innerHTML = queue.map((song, index) => `
+      <div class="queue-item" data-index="${index}">
+        <img class="queue-item-cover" src="${window.getAlbumImageUrl?.(song.album) || ''}" alt="${song.album}">
+        <div class="queue-item-info">
+          <h4 class="queue-item-title">${song.title}</h4>
+          <p class="queue-item-artist">${song.artist}</p>
+        </div>
+        <span class="queue-item-duration">${song.duration}</span>
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    content.querySelectorAll('.queue-item').forEach((item, index) => {
+      item.addEventListener('click', () => {
+        this.playFromQueue(index);
+      });
+    });
+  }
+  
+  updateRecentContent() {
+    const content = document.getElementById('recent-list-popup');
+    if (!content) return;
+    
+    const recent = window.recentlyPlayed || [];
+    
+    if (recent.length === 0) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+            </svg>
+          </div>
+          <div class="empty-state-text">No recently played songs<br>Start listening to build your history!</div>
+        </div>
+      `;
+      return;
+    }
+    
+    content.innerHTML = recent.map((song, index) => `
+      <div class="recent-item" data-index="${index}">
+        <img class="recent-item-cover" src="${window.getAlbumImageUrl?.(song.album) || ''}" alt="${song.album}">
+        <div class="recent-item-info">
+          <h4 class="recent-item-title">${song.title}</h4>
+          <p class="recent-item-artist">${song.artist}</p>
+        </div>
+        <span class="recent-item-duration">${song.duration}</span>
+      </div>
+    `).join('');
+    
+    // Add click handlers
+    content.querySelectorAll('.recent-item').forEach((item, index) => {
+      item.addEventListener('click', () => {
+        this.playFromRecent(index);
+      });
+    });
+  }
+  
+  playFromQueue(index) {
+    const queue = window.queue || [];
+    if (index >= 0 && index < queue.length) {
+      const song = queue.splice(index, 1)[0];
+      if (window.playSong) {
+        window.playSong(song);
+      }
+      this.updateQueueContent();
+      this.resetInactivityTimer();
+    }
+  }
+  
+  playFromRecent(index) {
+    const recent = window.recentlyPlayed || [];
+    if (index >= 0 && index < recent.length) {
+      const song = recent[index];
+      if (window.playSong) {
+        window.playSong(song);
+      }
+      this.resetInactivityTimer();
+    }
+  }
+  
+  startInactivityTimer() {
+    this.resetInactivityTimer();
+  }
+  
+  resetInactivityTimer() {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+    }
+    
+    // Only set timer if not on nowPlaying tab
+    if (this.activeTab !== 'nowPlaying') {
+      this.inactivityTimer = setTimeout(() => {
+        this.returnToNowPlaying();
+      }, 10000); // 10 seconds
+    }
+  }
+  
+  returnToNowPlaying() {
+    if (this.activeTab !== 'nowPlaying') {
+      this.switchTab('nowPlaying');
+      
+      // Show a subtle notification
+      if (window.showNotification) {
+        window.showNotification('Returned to Now Playing', 'info');
+      }
+    }
+  }
+  
+  handleKeyboard(e) {
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        this.switchToPrevTab();
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        this.switchToNextTab();
+        break;
+      case '1':
+        e.preventDefault();
+        this.switchTab('nowPlaying');
+        break;
+      case '2':
+        e.preventDefault();
+        this.switchTab('upNext');
+        break;
+      case '3':
+        e.preventDefault();
+        this.switchTab('recentPlays');
+        break;
+    }
+    this.resetInactivityTimer();
+  }
+  
+  switchToPrevTab() {
+    const tabs = ['nowPlaying', 'upNext', 'recentPlays'];
+    const currentIndex = tabs.indexOf(this.activeTab);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : tabs.length - 1;
+    this.switchTab(tabs[prevIndex]);
+  }
+  
+  switchToNextTab() {
+    const tabs = ['nowPlaying', 'upNext', 'recentPlays'];
+    const currentIndex = tabs.indexOf(this.activeTab);
+    const nextIndex = currentIndex < tabs.length - 1 ? currentIndex + 1 : 0;
+    this.switchTab(tabs[nextIndex]);
+  }
+  
+  onPopupOpen() {
+    this.switchTab('nowPlaying', true);
+    this.updateTabContent('nowPlaying');
+    this.resetInactivityTimer();
+    
+    // Show scroll indicator if there's content in other tabs
+    const scrollIndicator = document.querySelector('.scroll-indicator');
+    const hasQueue = (window.queue || []).length > 0;
+    const hasRecent = (window.recentlyPlayed || []).length > 0;
+    
+    if (scrollIndicator && (hasQueue || hasRecent)) {
+      scrollIndicator.classList.add('show');
+      setTimeout(() => {
+        scrollIndicator.classList.remove('show');
+      }, 3000);
+    }
+  }
+  
+  onPopupClose() {
+    if (this.inactivityTimer) {
+      clearTimeout(this.inactivityTimer);
+      this.inactivityTimer = null;
+    }
+  }
+  
+  // Public method to refresh content
+  refresh() {
+    this.updateTabContent(this.activeTab);
+  }
+}
+
+// Initialize the enhanced controller
+window.enhancedNowPlayingController = new EnhancedNowPlayingController();
