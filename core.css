@@ -152,7 +152,7 @@ html {
   transition: all var(--transition-normal);
 }
 
-
+/**
 #now-playing-overlay {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: var(--blur-md);
@@ -186,6 +186,7 @@ html {
   transform: scale(1) translateY(0);
   opacity: 1;
 }
+**/
 
 .artist-card {
   background: var(--bg-inset);
@@ -304,7 +305,7 @@ html {
   transform: translateX(0);
 }
 
-
+/**
 .control-button {
   width: 48px;
   height: 48px;
@@ -440,7 +441,7 @@ html {
   cursor: grabbing;
   transform: translateY(-50%) scale(1.2);
 }
-
+**/
 
 .breadcrumb {
   color: var(--fg-muted);
@@ -505,7 +506,7 @@ html {
   box-shadow: var(--shadow-small);
 }
 
-
+/**
 .queue-item {
   transition: background-color var(--transition-fast);
   will-change: background-color;
@@ -514,7 +515,7 @@ html {
 .queue-item:hover {
   background-color: var(--bg-subtle) !important;
 }
-
+**/
 
 #theme-toggle {
   background: var(--bg-subtle);
@@ -785,7 +786,7 @@ html {
   margin: -16px 0 0 -16px;
   border-width: 3px;
 }
-
+/**
 
 .queue-item-cover {
   transition: all var(--transition-fast);
@@ -810,7 +811,7 @@ html {
   content: '♪';
 }
 
-
+**/
 #navbar-album-cover {
   transition: all var(--transition-normal);
   will-change: transform, opacity;
@@ -834,7 +835,7 @@ html {
   content: '🎵';
 }
 
-
+/**
 #now-playing-cover {
   transition: all var(--transition-slow);
   will-change: transform, opacity, filter;
@@ -861,7 +862,7 @@ html {
   margin-bottom: 1rem;
 }
 
-
+**/
 .progressive-image {
   background-size: cover;
   background-position: center;
