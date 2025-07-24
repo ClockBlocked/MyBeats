@@ -693,47 +693,46 @@
 
 
 
+
+
+/* Add to core.css */
 .now-playing-popup {
   position: fixed;
+  bottom: 6.5rem;
   left: 50%;
-  bottom: 0;
-  transform: translateX(-50%) translateY(100%);
-  z-index: 1000;
-  width: 100%;
-  max-width: 720px;
-  height: 80vh;
-  background: var(--bg-inset);
+  transform: translateX(-50%);
+  width: 92vw;
+  max-width: 450px;
+  background: var(--bg-overlay-solid);
   border: 1px solid var(--border-default);
-  border-radius: 20px 20px 0 0;
-  backdrop-filter: var(--blur-lg);
-  box-shadow: var(--shadow-lg);
-  opacity: 0;
-  transition: transform var(--transition-bouncy), opacity var(--transition-bouncy);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  border-radius: 24px;
   padding: 2rem;
-  pointer-events: none;
+  box-shadow: var(--shadow-extra-large);
+  backdrop-filter: var(--blur-lg);
+  z-index: 999;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) translateY(20px) scale(0.95);
+  transition: all var(--transition-smooth);
 }
 
 .now-playing-popup.show {
-  transform: translateX(-50%) translateY(0);
   opacity: 1;
-  pointer-events: auto;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 
 .popup-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 2.5rem;
-  flex: 1;
-letter-spacing: -0.85px;
+  margin-bottom: 1.5rem;
 }
 
 .popup-title {
   font-size: 1.25rem;
-  font-weight: 500;
-  color: var(--fg-subtle);
+  font-weight: 700;
+  color: var(--fg-default);
   margin: 0;
 }
 
@@ -757,19 +756,17 @@ letter-spacing: -0.85px;
 }
 
 .popup-album-cover {
-  width: 60%;
+  width: 100%;
   aspect-ratio: 1/1;
   border-radius: 16px;
   object-fit: cover;
   margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-small);
-  border: 1px dashed var(--fg-subtle);
-  transition: all var(--transition-smooth);
+  box-shadow: var(--shadow-large);
+  transition: all var(--transition-normal);
 }
 
 .popup-album-cover:hover {
   transform: scale(1.02);
-   transition: all var(--transition-smooth);
 }
 
 .popup-song-info {
@@ -788,24 +785,17 @@ letter-spacing: -0.85px;
 }
 
 .popup-artist-name {
-  font-size: 1.25rem;
+  font-size: 1rem;
   color: var(--fg-muted);
   margin: 0 0 0.25rem 0;
 }
 
 .popup-album-name {
   font-size: 0.875rem;
-  letter-spacing: -1.0;
-  font-weight: 300;
   color: var(--fg-subtle);
   margin: 0;
-  opacity: 0.15;
-   transition: all var(--transition-smooth);
 }
-.now-playing-popup:hover .popup-album-name {
-  opacity: 1;
-   transition: opacity 0.75s ease-in-out;
-}
+
 .popup-progress {
   margin-bottom: 2rem;
 }
@@ -813,8 +803,7 @@ letter-spacing: -0.85px;
 .progress-time {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
-  font-weight: 300;
+  font-size: 0.75rem;
   color: var(--fg-muted);
   margin-bottom: 0.5rem;
 }
@@ -864,17 +853,17 @@ letter-spacing: -0.85px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 
 .popup-control-btn {
-  width: 5.5rem;
-  height: 5.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
   border-radius: 50%;
-  background: var(--bg-disabled);
+  background: var(--bg-subtle);
   border: 1px solid var(--border-default);
-  color: var(--fg-subtle);
+  color: var(--fg-default);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -904,18 +893,18 @@ letter-spacing: -0.85px;
 }
 
 .popup-control-btn.active {
-  background: var(--bg-subtle);
+  background: var(--accent-primary);
   color: var(--fg-onEmphasis);
   border-color: var(--accent-primary);
 }
 
 .popup-control-btn.play-pause {
-  width: 6.15rem;
-  height: 6.15rem;
+  width: 3.5rem;
+  height: 3.5rem;
   background: var(--gradient-primary);
   border: none;
   color: var(--fg-onEmphasis);
-  box-shadow: var(--shadow-small);
+  box-shadow: var(--shadow-large);
 }
 
 .popup-control-btn.play-pause:hover {
@@ -965,9 +954,9 @@ letter-spacing: -0.85px;
 }
 
 .popup-tab {
-  padding: 0.75rem 3.5rem;
+  padding: 0.75rem 1.5rem;
   font-size: 0.875rem;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--fg-muted);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -981,6 +970,7 @@ letter-spacing: -0.85px;
 
 .popup-tab.active {
   color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
 }
 
 .popup-tab-content {
