@@ -1,400 +1,486 @@
+
 <!DOCTYPE html>
 <html lang="en" class="dark">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Player</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.css" rel="stylesheet">
-    <link href="https://test.koders.cloud/core.css" rel="stylesheet">
-    <link href="https://dev.wuaze.com/styleSheets/fonts.css" rel="stylesheet">
-    <link href="./navBar.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Music Player</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.css" rel="stylesheet">
+  <link href="https://dev.wuaze.com/styleSheets/fonts.css" rel="stylesheet">
+  <link href="./core.css" rel="stylesheet">
+  <link href="./navBar.css" rel="stylesheet">
+  
+<style>
+#navbar {
+  height: 50px !important;
+  padding: 0 1rem;
+}
+#navbar .navbar-content {
+  align-items: center;
+}
+
+#pageWrapper {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  overflow-y: auto;
+}
+* {
+  user-select: none !important;
+}
+#now-playing-popup {
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.artistTop {
+  background-color: var(--bg-subtle);
+}
+
+</style>
 </head>
+
 <body class="min-h-screen transition-colors duration-300">
-    <div id="pageWrapper">
+  <div id="pageWrapper">
 
-        <!-- Usually placed right after <body> -->
-<div class="artist-popover popover-portal"></div>
+    <!-- Usually placed right after <body> -->
+    <div class="popover-portal"></div>
 
+    <style>
+      .artistTop {
+        position: sticky;
+        z-index: 100;
+        top: 0;
+        overflow: scroll;
+      }
 
+      .artist-header {
+        position: sticky;
+        padding: 1.35rem 1rem;
+/*        background: #0d1117;*/
+        color: #fff;
+        overflow: hidden;
+      }
 
+      .artist-header-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 100%;
+        background-size: cover;
+        background-position: center;
+        opacity: 0.15;
+        z-index: 1;
+        filter: blur(24px);
+        transform: scale(1.1);
+      }
 
+      .content-wrapper {
+        position: relative;
+        z-index: -1;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2rem;
+      }
 
-<!-- Replace the existing navbar in index.html with this improved version -->
-<nav id="navbar" class="glass-effect">
-    <div class="navbar-content">
+      .artist-header .artist-avatar {
+        width: 4rem;
+        height: 4rem;
+        border-radius: 100%;
+        overflow: hidden;
+        flex-shrink: 0;
+        box-shadow: 0 0 0 4px #161b22;
+      }
+
+      .artist-header .artist-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .artist-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.75rem;
+      }
+
+      .artist-info h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .metadata-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: #c9d1d9;
+      }
+
+      .metadata-tags span {
+        background-color: #21262d;
+        border-radius: 9999px;
+        padding: 0.25rem 0.75rem;
+      }
+
+      .action-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+      }
+
+      .action-buttons button {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        border-radius: 0.375rem;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+      }
+
+      .action-buttons .play {
+        background-color: #238636;
+        color: white;
+      }
+
+      .action-buttons .follow {
+        background-color: #30363d;
+        color: #c9d1d9;
+      }
+
+      .action-buttons .play:hover {
+        background-color: #2ea043;
+      }
+
+      .action-buttons .follow:hover {
+        background-color: #484f58;
+      }
+
+      .content-offset {
+        padding: 2rem;
+        background-color: #0d1117;
+        color: #c9d1d9;
+        min-height: 100vh;
+      }
+
+      .artistBottom {
+        height: auto;
+        width: 100%;
+        padding: 2rem 0;
+      }
+    </style>
+
+    <!-- Replace the existing navbar in index.html with this improved version -->
+    <nav id="navbar" class="glass-effect">
+      <div class="navbar-content">
         <!-- Left: Menu Trigger -->
         <div class="navbar-left">
-            <button class="menu-trigger" id="menu-trigger" title="Menu">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
-                </svg>
-            </button>
+          <button class="menu-trigger" id="menu-trigger" title="Menu">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
         </div>
 
         <!-- Center: Now Playing (Clickable) -->
         <div class="navbar-center" id="now-playing-area" title="Click to open Now Playing">
-            <div class="now-playing-display">
-                <div id="navbar-logo">
-                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/>
-                    </svg>
-                </div>
-                <img id="navbar-album-cover" src="" alt="Album Cover" class="hidden object-cover">
-                
-                <div class="now-playing-info">
-                    <div id="navbar-song-title" class="truncate">No song playing</div>
-                    <div id="navbar-artist" class="truncate">Select a song to get started</div>
-                </div>
-                
-                <div class="play-indicator" id="play-indicator"></div>
+          <div class="now-playing-display">
+            <div id="navbar-logo" class="flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.369 4.369 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+              </svg>
             </div>
+
+            <img id="navbar-album-cover" src="" alt="Album Cover" class="hidden object-cover">
+
+            <div class="now-playing-info">
+              <div id="navbar-song-title" class="truncate">No song playing</div>
+              <div id="navbar-artist" class="truncate">Select a song to get started</div>
+            </div>
+
+            <div class="play-indicator" id="play-indicator"></div>
+          </div>
         </div>
 
         <!-- Right: Controls & Theme -->
         <div class="navbar-right">
-            <div class="nav-controls">
-                <button class="nav-control-btn" id="prev-btn-navbar" title="Previous Track">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
-                    </svg>
-                </button>
-                
-                <button class="nav-control-btn play-pause" id="play-pause-navbar" title="Play/Pause">
-                    <svg id="play-icon-navbar" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-                    </svg>
-                    <svg id="pause-icon-navbar" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                    </svg>
-                </button>
-                
-                <button class="nav-control-btn" id="next-btn-navbar" title="Next Track">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <button id="theme-toggle" title="Toggle Theme">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M17.293 13.293A8 8 0 116.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
-                </svg>
+          <div class="nav-controls">
+            <button class="nav-control-btn" id="prev-btn-navbar" title="Previous Track">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+              </svg>
             </button>
-        </div>
-    </div>
-</nav>
 
-<!-- Dropdown Menu -->
-<div class="dropdown-menu" id="dropdown-menu">
-    <div class="dropdown-header">
+            <button class="nav-control-btn play-pause" id="play-pause-navbar" title="Play/Pause">
+              <svg id="play-icon-navbar" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <svg id="pause-icon-navbar" class="w-4 h-4 hidden" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <button class="nav-control-btn" id="next-btn-navbar" title="Next Track">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" />
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </nav>
+
+    <!-- Dropdown Menu -->
+    <div class="dropdown-menu" id="dropdown-menu">
+      <div class="dropdown-header">
         <h3 class="dropdown-title">Music Library</h3>
         <button class="dropdown-close" id="dropdown-close">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-            </svg>
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
         </button>
-    </div>
-    
-    <!-- Favorites Section -->
-    <div class="dropdown-section">
-        <h4 class="section-title">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-            </svg>
-            Favorites
-        </h4>
-        
-        <div class="dropdown-item" id="favorite-songs">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Favorite Songs</div>
-                <div class="dropdown-item-subtitle">Your liked tracks</div>
-            </div>
-            <div class="dropdown-item-badge" id="favorite-songs-count">0</div>
-        </div>
-        
-        <div class="dropdown-item" id="favorite-artists">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M9 12a3 3 0 00-3-3H2a1 1 0 100 2h4a1 1 0 011 1v.5a1 1 0 102 0V12zm3-8a3 3 0 100 6 3 3 0 000-6zm-1 4a1 1 0 11-2 0 1 1 0 012 0z"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Favorite Artists</div>
-                <div class="dropdown-item-subtitle">Artists you follow</div>
-            </div>
-            <div class="dropdown-item-badge" id="favorite-artists-count">0</div>
-        </div>
-    </div>
-    
-    <!-- Playlists Section -->
-    <div class="dropdown-section">
-        <h4 class="section-title">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-            </svg>
-            Playlists
-        </h4>
-        
-        <div class="dropdown-item" id="create-playlist">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Create Playlist</div>
-                <div class="dropdown-item-subtitle">Make a new playlist</div>
-            </div>
-        </div>
-        
-        <div id="playlists-list">
-            <!-- Playlists will be dynamically inserted here -->
-            <div class="empty-state" id="playlists-empty">
-                <div class="empty-state-icon">
-                    <svg class="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-                    </svg>
-                </div>
-                <div class="empty-state-text">No playlists yet.<br>Create your first playlist!</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Quick Actions Section -->
-    <div class="dropdown-section">
-        <h4 class="section-title">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/>
-            </svg>
-            Quick Actions
-        </h4>
-        
-        <div class="dropdown-item" id="recently-played">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Recently Played</div>
-                <div class="dropdown-item-subtitle">Your recent listening history</div>
-            </div>
-            <div class="dropdown-item-badge" id="recent-count">0</div>
-        </div>
-        
-        <div class="dropdown-item" id="queue-view">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14 8a1 1 0 100-2 1 1 0 000 2zM2 14a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H4a2 2 0 01-2-2v-2zM14 16a1 1 0 100-2 1 1 0 000 2z"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Queue</div>
-                <div class="dropdown-item-subtitle">Upcoming songs</div>
-            </div>
-            <div class="dropdown-item-badge" id="queue-count">0</div>
-        </div>
-        
-        <div class="dropdown-item" id="search-music">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Search</div>
-                <div class="dropdown-item-subtitle">Find songs, artists & albums</div>
-            </div>
-        </div>
-        
-        <div class="dropdown-item" id="shuffle-all">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Shuffle All</div>
-                <div class="dropdown-item-subtitle">Play all songs randomly</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Settings Section -->
-    <div class="dropdown-section">
-        <h4 class="section-title">
-            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-            </svg>
-            Settings
-        </h4>
-        
-        <div class="dropdown-item" id="app-settings">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">Preferences</div>
-                <div class="dropdown-item-subtitle">App settings & options</div>
-            </div>
-        </div>
-        
-        <div class="dropdown-item" id="about-app">
-            <div class="dropdown-item-icon">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-                </svg>
-            </div>
-            <div class="dropdown-item-content">
-                <div class="dropdown-item-title">About</div>
-                <div class="dropdown-item-subtitle">Version & information</div>
-            </div>
-        </div>
-    </div>
-</div>
+      </div>
 
-<!-- Replace the existing now-playing-popup in index.html with this -->
-<div class="now-playing-popup" id="now-playing-popup">
-  <div class="popup-header">
-    <h3 class="popup-title">Now Playing</h3>
-    <button class="popup-close" id="popup-close">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-      </svg>
-    </button>
-  </div>
-  
-  <img id="popup-album-cover" src="" alt="Album Cover" class="popup-album-cover">
-  
-  <div class="popup-song-info">
-    <h4 id="popup-song-title" class="popup-song-title"></h4>
-    <p id="popup-artist-name" class="popup-artist-name"></p>
-    <p id="popup-album-name" class="popup-album-name"></p>
-  </div>
-  
-  <div class="popup-progress">
-    <div class="progress-time">
-      <span id="popup-current-time">0:00</span>
-      <span id="popup-total-time">0:00</span>
-    </div>
-    <div class="progress-bar" id="popup-progress-bar">
-      <div class="progress-fill" id="popup-progress-fill" style="width: 0%">
-        <div class="progress-thumb" id="popup-progress-thumb"></div>
+      <!-- Favorites Section -->
+      <div class="dropdown-section">
+        <h4 class="section-title">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+          </svg>
+          Favorites
+        </h4>
+
+        <div class="dropdown-item" id="favorite-songs">
+          <div class="dropdown-item-icon">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="dropdown-item-content">
+            <div class="dropdown-item-title">Favorite Songs</div>
+            <div class="dropdown-item-subtitle">Your liked tracks</div>
+          </div>
+          <div class="dropdown-item-badge" id="favorite-songs-count">0</div>
+        </div>
+
+        <div class="dropdown-item" id="favorite-artists">
+          <div class="dropdown-item-icon">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9 12a3 3 0 00-3-3H2a1 1 0 100 2h4a1 1 0 011 1v.5a1 1 0 102 0V12zm3-8a3 3 0 100 6 3 3 0 000-6zm-1 4a1 1 0 11-2 0 1 1 0 012 0z" />
+            </svg>
+          </div>
+          <div class="dropdown-item-content">
+            <div class="dropdown-item-title">Favorite Artists</div>
+            <div class="dropdown-item-subtitle">Artists you follow</div>
+          </div>
+          <div class="dropdown-item-badge" id="favorite-artists-count">0</div>
+        </div>
+      </div>
+
+      <!-- Playlists Section -->
+      <div class="dropdown-section">
+        <h4 class="section-title">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+          </svg>
+          Playlists
+        </h4>
+
+        <div class="dropdown-item" id="create-playlist">
+          <div class="dropdown-item-icon">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="dropdown-item-content">
+            <div class="dropdown-item-title">Create Playlist</div>
+            <div class="dropdown-item-subtitle">Make a new playlist</div>
+          </div>
+        </div>
+
+        <div id="playlists-list">
+          <!-- Playlists will be dynamically inserted here -->
+          <div class="empty-state" id="playlists-empty">
+            <div class="empty-state-icon">
+              <svg class="w-full h-full" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+              </svg>
+            </div>
+            <div class="empty-state-text">No playlists yet.<br>Create your first playlist!</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- Settings Section -->
+      <div class="dropdown-section">
+        <h4 class="section-title">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
+          </svg>
+          Settings
+        </h4>
+
+        <div class="dropdown-item" id="app-settings">
+          <div class="dropdown-item-icon">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="dropdown-item-content">
+            <div class="dropdown-item-title">Preferences</div>
+            <div class="dropdown-item-subtitle">App settings & options</div>
+          </div>
+        </div>
+
+        <div class="dropdown-item" id="about-app">
+          <div class="dropdown-item-icon">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="dropdown-item-content">
+            <div class="dropdown-item-title">About</div>
+            <div class="dropdown-item-subtitle">Version & information</div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-  
-  <div class="popup-controls">
-    <button class="popup-control-btn" id="popup-shuffle-btn" title="Shuffle">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-      </svg>
-    </button>
-    
-    <button class="popup-control-btn" id="popup-prev-btn" title="Previous">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z"/>
-      </svg>
-    </button>
-    
-    <button class="popup-control-btn play-pause" id="popup-play-pause-btn">
-      <svg id="popup-play-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-      </svg>
-      <svg id="popup-pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-      </svg>
-    </button>
-    
-    <button class="popup-control-btn" id="popup-next-btn" title="Next">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z"/>
-      </svg>
-    </button>
-    
-    <button class="popup-control-btn" id="popup-repeat-btn" title="Repeat">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
-      </svg>
-    </button>
-  </div>
-  
-  <div class="popup-actions">
-    <button class="popup-action-btn favorite" id="popup-favorite-btn" title="Add to Favorites">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-      </svg>
-    </button>
-    
-    <button class="popup-action-btn" id="popup-queue-btn" title="View Queue">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
-      </svg>
-    </button>
-    
-    <button class="popup-action-btn" id="popup-share-btn" title="Share">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z"/>
-      </svg>
-    </button>
-    
-    <button class="popup-action-btn" id="popup-more-btn" title="More Options">
-      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-      </svg>
-    </button>
-  </div>
-  
-  <div class="popup-tabs">
-    <button class="popup-tab active" data-tab="now-playing">Now Playing</button>
-    <button class="popup-tab" data-tab="queue">Up Next</button>
-    <button class="popup-tab" data-tab="recent">Recent Plays</button>
-  </div>
-  
-  <div class="popup-tab-content" data-tab="queue">
-    <ul class="popup-song-list" id="popup-queue-list"></ul>
-  </div>
-  
-  <div class="popup-tab-content" data-tab="recent">
-    <ul class="popup-song-list" id="popup-recent-list"></ul>
-  </div>
-</div>
 
+    <!-- Now Playing Popup -->
+    <div class="now-playing-popup" id="now-playing-popup">
+      <div class="popup-header">
+        <h3 class="popup-title">Now Playing</h3>
+        <button class="popup-close" id="popup-close">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
 
+      <!-- Main Now Playing Content -->
+      <div class="popup-main-content">
+        <img id="popup-album-cover" src="" alt="Album Cover" class="popup-album-cover">
 
+        <div class="popup-song-info">
+          <h4 id="popup-song-title" class="popup-song-title"></h4>
+          <p id="popup-artist-name" class="popup-artist-name"></p>
+          <p id="popup-album-name" class="popup-album-name"></p>
+        </div>
 
-
-    <div class="pt-16" id="mainArea">
-        <main id="main-container" class="content-container max-w-7xl mx-auto my-8 rounded-xl shadow-2xl min-h-[80vh]">
-            <div id="home-page" class="p-8">
-                <div class="text-center py-8">
-                    <h1 class="text-4xl font-bold mb-4 gradient-text">Discover Amazing Music</h1>
-                    <p class="text-lg text-gray-400 mb-8">Explore artists, albums, and songs from your personal library</p>
-                </div>
-                <h2 class="text-2xl font-bold mb-6">Featured Artists</h2>
-                <div id="featured-artists" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12"></div>
+        <div class="popup-progress">
+          <div class="progress-time">
+            <span id="popup-current-time">0:00</span>
+            <span id="popup-total-time">0:00</span>
+          </div>
+          <div class="progress-bar" id="popup-progress-bar">
+            <div class="progress-fill" id="popup-progress-fill" style="width: 0%">
+              <div class="progress-thumb" id="popup-progress-thumb"></div>
             </div>
-            <div id="artist-page" class="hidden"></div>
-        </main>
+          </div>
+        </div>
+
+        <div class="popup-controls">
+          <button class="popup-control-btn" id="popup-shuffle-btn" title="Shuffle">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <button class="popup-control-btn" id="popup-prev-btn" title="Previous">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M8.445 14.832A1 1 0 0010 14v-2.798l5.445 3.63A1 1 0 0017 14V6a1 1 0 00-1.555-.832L10 8.798V6a1 1 0 00-1.555-.832l-6 4a1 1 0 000 1.664l6 4z" />
+            </svg>
+          </button>
+
+          <button class="popup-control-btn play-pause" id="popup-play-pause-btn">
+            <svg id="popup-play-icon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+            </svg>
+            <svg id="popup-pause-icon" class="w-5 h-5 hidden" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+
+          <button class="popup-control-btn" id="popup-next-btn" title="Next">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" />
+            </svg>
+          </button>
+
+          <button class="popup-control-btn" id="popup-repeat-btn" title="Repeat">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="popup-actions">
+          <button class="popup-action-btn favorite" id="popup-favorite-btn" title="Add to Favorites">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+            </svg>
+          </button>
+
+          <button class="popup-action-btn" id="popup-queue-btn" title="View Queue">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+            </svg>
+          </button>
+
+          <button class="popup-action-btn" id="popup-share-btn" title="Share">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
+            </svg>
+          </button>
+
+          <button class="popup-action-btn" id="popup-more-btn" title="More Options">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
     </div>
+
+    <div id="mainArea">
+      <main id="main-container" class="content-container">
+        <div id="home-page" class="p-8">
+          <div class="text-center py-12">
+            <h1 class="text-5xl font-bold mb-6 gradient-text">Discover Amazing Music</h1>
+            <p class="text-xl text-gray-400 mb-12 max-w-2xl mx-auto">Explore artists, albums, and songs from your personal library with an immersive listening experience</p>
+          </div>
+          <h2 class="text-3xl font-bold mb-8">Featured Artists</h2>
+          <div id="featured-artists" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16"></div>
+        </div>
+        <div id="artist-page" class="hidden"></div>
+      </main>
+    </div>
+
     <button class="floating-add-button" title="Create Playlist">
-        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+      </svg>
     </button>
-
+    <button id="theme-toggle" title="Toggle Theme">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M17.293 13.293A8 8 0 116.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+      </svg>
+    </button>
     <script src="https://cdn.jsdelivr.net/npm/preline@2.0.3/dist/preline.min.js" defer></script>
-    <script type="module" src="./pageModules/main.js" defer></script>
-    <script type="module" src="./pageModules/navBar.js" defer></script>
-
-
-
-    </div>
+    <script type="module" src="./pageModules/global.js" defer></script>
+  </div>
 </body>
+
 </html>
