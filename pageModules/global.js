@@ -1456,6 +1456,12 @@ const ui = {
     }
   },
   
+  
+  
+  
+  
+  
+  
   bindEvents: function() {
     window.addEventListener("scroll", () => {
       this.elements.navbar?.classList.toggle("floating", window.scrollY > 50);
@@ -1848,128 +1854,65 @@ const ui = {
   }
 };
 
+
+
+
+
+
 const pageManager = {
-  loadHomePage: function() {
-    player.currentPage = "home";
-    ui.elements.homePage.classList.remove("hidden");
-    ui.elements.artistPage.classList.add("hidden");
-    player.currentArtist = null;
-    player.currentAlbum = null;
-    
-    ui.cleanupCarousels();
-    ui.updateBreadcrumb();
-    ui.showLoadingBar();
-    ui.showSkeletonLoader(ui.elements.featuredArtists, "220px", 4);
-    
-    setTimeout(() => {
-      ui.loadingProgress = 60;
-      ui.updateLoadingProgress();
-      
-      setTimeout(() => {
-        pageManager.renderRandomArtists();
-        ui.completeLoadingBar();
-      }, 200);
-    }, 500);
-  },
   
-  loadArtistPage: async function(artist) {
-    player.currentPage = "artist";
-    player.currentArtist = artist;
-    ui.elements.homePage.classList.add("hidden");
-    ui.elements.artistPage.classList.remove("hidden");
-    ui.updateBreadcrumb();
-    ui.showLoadingBar();
-    ui.elements.artistPage.innerHTML = "";
-    ui.showSkeletonLoader(ui.elements.artistPage, "400px", 1);
+  updateBreadcrumbs: function(items = []) {
+    const breadcrumbList = document.querySelector('.breadcrumb-list');
+    if (!breadcrumbList) return;
     
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    breadcrumbList.innerHTML = '';
     
-    ui.elements.artistPage.innerHTML = helpers.renderTemplate("enhancedArtist", {
-      artist: artist.artist,
-      genre: artist.genre,
-      cover: helpers.getArtistImageUrl(artist.artist),
-      albumCount: artist.albums.length,
-      songCount: helpers.getTotalSongs(artist),
+    // Always include home
+    const homeItem = document.createElement('li');
+    homeItem.className = 'breadcrumb-item flex items-center';
+    homeItem.innerHTML = `
+      <a href="/" class="breadcrumb hover:text-accent-primary transition-colors" data-nav="home">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+        <span class="ml-1 hidden md:inline">Home</span>
+      </a>
+    `;
+    breadcrumbList.appendChild(homeItem);
+    
+    // Add remaining items
+    items.forEach((item, index) => {
+      // Separator
+      const separator = document.createElement('li');
+      separator.className = 'breadcrumb-separator mx-2 text-fg-subtle';
+      separator.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      `;
+      breadcrumbList.appendChild(separator);
+      
+      // Item
+      const listItem = document.createElement('li');
+      listItem.className = 'breadcrumb-item';
+      
+      if (index === items.length - 1) {
+        // Last item (current page)
+        listItem.innerHTML = `<span class="font-medium text-fg-default">${item.text}</span>`;
+      } else {
+        // Clickable item
+        listItem.innerHTML = `
+          <a href="${item.url}" class="breadcrumb hover:text-accent-primary transition-colors" 
+             data-nav="${item.type}" ${Object.entries(item.params).map(([k,v]) => `data-${k}="${v}"`).join(' ')}>
+            ${item.text}
+          </a>
+        `;
+      }
+      
+      breadcrumbList.appendChild(listItem);
     });
-    
-    setTimeout(() => {
-      const artistHeader = document.getElementById('artist-header');
-      const headerToggle = document.getElementById('header-toggle');
-      
-      if (artistHeader && headerToggle) {
-        const toggleHeader = () => {
-          artistHeader.classList.toggle('collapsed');
-          
-          if (artistHeader.classList.contains('collapsed')) {
-            ui.showNotification('Header collapsed', 'info');
-          } else {
-            ui.showNotification('Header expanded', 'info');
-          }
-        };
-        
-        headerToggle.addEventListener('click', toggleHeader);
-        
-        const keyHandler = (e) => {
-          if (e.altKey && e.key === 'h' && artistHeader) {
-            toggleHeader();
-          }
-        };
-        
-        if (window.currentHeaderKeyHandler) {
-          document.removeEventListener('keydown', window.currentHeaderKeyHandler);
-        }
-        
-        document.addEventListener('keydown', keyHandler);
-        window.currentHeaderKeyHandler = keyHandler;
-      }
-    }, 100);
-    
-    const artistHeaderImage = ui.elements.artistPage.querySelector('.artist-avatar img');
-    if (artistHeaderImage) {
-      const artistImageUrl = helpers.getArtistImageUrl(artist.artist);
-      const fallbackUrl = helpers.getDefaultArtistImage();
-      helpers.loadImageWithFallback(artistHeaderImage, artistImageUrl, fallbackUrl, 'artist');
-    }
-    
-    const similarContainer = document.getElementById("similar-artists-container");
-    if (similarContainer && artist.similar) {
-      ui.similarArtistsCarousel = new helpers.SimilarArtistsCarousel(similarContainer);
-      
-      for (let i = 0; i < artist.similar.length; i++) {
-        const similarArtistName = artist.similar[i];
-        
-        let similarArtistData = window.music?.find(a => a.artist === similarArtistName);
-        
-        if (!similarArtistData) {
-          similarArtistData = {
-            artist: similarArtistName,
-            id: `similar-${i}`,
-            albums: [],
-            genre: "Unknown"
-          };
-        }
-        
-        setTimeout(() => {
-          ui.similarArtistsCarousel.addArtist(similarArtistData);
-        }, i * 50);
-      }
-    }
-    
-    const albumsContainer = document.getElementById("albums-container");
-    if (albumsContainer && artist.albums?.length > 0) {
-      ui.albumSelector = new helpers.AlbumSelector(albumsContainer, artist);
-    }
-    
-    ui.loadingProgress = 75;
-    ui.updateLoadingProgress();
-    
-    setTimeout(() => {
-      ui.completeLoadingBar();
-      ui.fadeInContent(ui.elements.artistPage);
-      ui.bindDynamicPageEvents();
-    }, 300);
   },
-  
+
   renderRandomArtists: function() {
     if (!window.music || window.music.length === 0) {
       ui.elements.featuredArtists.innerHTML = "<p>No music library found.</p>";
@@ -2003,8 +1946,1139 @@ const pageManager = {
     });
     
     ui.fadeInContent(ui.elements.featuredArtists);
+  },
+  
+loadHomePage: function() {
+  player.currentPage = "home";
+  
+  // Show loading overlay
+  this.showLoading();
+  
+  this.updateBreadcrumbs([]);
+  
+  // Prepare home page content
+  const homeContent = `
+    <div class="text-center py-8 md:py-12">
+      <h1 class="text-4xl md:text-5xl font-bold mb-6 gradient-text">Discover Amazing Music</h1>
+      <p class="text-lg md:text-xl text-gray-400 mb-8 md:mb-12 max-w-2xl mx-auto">Explore artists, albums, and songs from your personal library with an immersive listening experience</p>
+    </div>
+    <h2 class="text-2xl md:text-3xl font-bold mb-6 md:mb-8 px-4">Featured Artists</h2>
+    <div id="featured-artists" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8 px-4"></div>
+  `;
+  
+  // Update content (with fade effect)
+  this.updatePageContent(homeContent, () => {
+    // After content is loaded, render artists
+    this.renderRandomArtists();
+    ui.completeLoadingBar();
+    this.hideLoading();
+  });
+},
+
+  normalizeForUrl: function(text) {
+    return text
+      .toString()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '');
+  },
+
+loadArtistPage: function(artist) {
+  player.currentPage = "artist";
+  player.currentArtist = artist;
+  
+  // Show loading overlay
+  this.showLoading();
+  
+        this.updateBreadcrumbs([
+        {
+          type: 'artist',
+          params: { artist: artist.artist },
+          url: `/artist/${this.normalizeForUrl(artist.artist)}/`,
+          text: artist.artist
+        }
+      ]);
+  
+  // Clear content first (with fade effect)
+  this.clearPageContent(() => {
+    // After clearing, show skeleton loader
+    const skeleton = `<div class="skeleton w-full h-[400px] rounded-lg"></div>`;
+    document.getElementById('dynamic-content').innerHTML = skeleton;
+    
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      // Render artist page content using your existing enhancedArtist template
+      const artistContent = helpers.renderTemplate("enhancedArtist", {
+        artist: artist.artist,
+        genre: artist.genre,
+        cover: helpers.getArtistImageUrl(artist.artist),
+        albumCount: artist.albums.length,
+        songCount: helpers.getTotalSongs(artist),
+      });
+      
+      // Update content (with fade effect)
+      this.updatePageContent(artistContent, () => {
+        // After content is loaded, setup additional functionality
+        const artistHeader = document.getElementById('artist-header');
+        const headerToggle = document.getElementById('header-toggle');
+        
+        if (artistHeader && headerToggle) {
+          const toggleHeader = () => {
+            artistHeader.classList.toggle('collapsed');
+            
+            if (artistHeader.classList.contains('collapsed')) {
+              ui.showNotification('Header collapsed', 'info');
+            } else {
+              ui.showNotification('Header expanded', 'info');
+            }
+          };
+          
+          headerToggle.addEventListener('click', toggleHeader);
+          
+          const keyHandler = (e) => {
+            if (e.altKey && e.key === 'h' && artistHeader) {
+              toggleHeader();
+            }
+          };
+          
+          if (window.currentHeaderKeyHandler) {
+            document.removeEventListener('keydown', window.currentHeaderKeyHandler);
+          }
+          
+          document.addEventListener('keydown', keyHandler);
+          window.currentHeaderKeyHandler = keyHandler;
+        }
+        
+        const artistHeaderImage = document.querySelector('.artist-avatar img');
+        if (artistHeaderImage) {
+          const artistImageUrl = helpers.getArtistImageUrl(artist.artist);
+          const fallbackUrl = helpers.getDefaultArtistImage();
+          helpers.loadImageWithFallback(artistHeaderImage, artistImageUrl, fallbackUrl, 'artist');
+        }
+        
+        const similarContainer = document.getElementById("similar-artists-container");
+        if (similarContainer && artist.similar) {
+          ui.similarArtistsCarousel = new helpers.SimilarArtistsCarousel(similarContainer);
+          
+          for (let i = 0; i < artist.similar.length; i++) {
+            const similarArtistName = artist.similar[i];
+            
+            let similarArtistData = window.music?.find(a => a.artist === similarArtistName);
+            
+            if (!similarArtistData) {
+              similarArtistData = {
+                artist: similarArtistName,
+                id: `similar-${i}`,
+                albums: [],
+                genre: "Unknown"
+              };
+            }
+            
+            setTimeout(() => {
+              ui.similarArtistsCarousel.addArtist(similarArtistData);
+            }, i * 50);
+          }
+        }
+        
+        const albumsContainer = document.getElementById("albums-container");
+        if (albumsContainer && artist.albums?.length > 0) {
+          ui.albumSelector = new helpers.AlbumSelector(albumsContainer, artist);
+        }
+        
+        // Complete the loading
+        ui.completeLoadingBar();
+        ui.bindDynamicPageEvents();
+        this.hideLoading();
+      });
+    }, 800);
+  });
+},
+
+loadAllArtistsPage: function() {
+  player.currentPage = "allArtists";
+  
+  // Show loading overlay
+  this.showLoading();
+  
+      this.updateBreadcrumbs([
+      {
+        type: 'allArtists',
+        params: {},
+        url: '/artists/',
+        text: 'All Artists'
+      }
+    ]);
+  
+  // Prepare all artists page content
+  const allArtistsContent = `
+    <div class="page-header px-4 sm:px-6 py-4">
+      <h1 class="text-3xl font-bold mb-6">All Artists</h1>
+      <div class="filter-controls mb-6 flex flex-wrap gap-4 items-center">
+        <div class="search-wrapper relative flex-grow max-w-md">
+          <input type="text" id="artist-search" 
+                 class="w-full bg-bg-subtle border border-border-subtle rounded-lg py-2 px-4 pl-10 text-fg-default focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-colors"
+                 placeholder="Search artists...">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-fg-muted" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <div id="genre-filters" class="genre-filters flex flex-wrap gap-2"></div>
+        <div class="view-toggle ml-auto">
+          <button id="grid-view-btn" class="p-2 rounded-lg bg-bg-subtle hover:bg-bg-muted active:bg-accent-primary transition-colors">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+          </button>
+          <button id="list-view-btn" class="p-2 rounded-lg bg-bg-subtle hover:bg-bg-muted transition-colors">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="artists-grid" class="artists-grid grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 px-4 sm:px-6"></div>
+  `;
+  
+  // Update content (with fade effect)
+  this.updatePageContent(allArtistsContent, () => {
+    // Show skeleton loaders
+    const artistsGrid = document.getElementById('artists-grid');
+    ui.showSkeletonLoader(artistsGrid, "220px", 10);
+    
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      // Render all artists
+      this.renderAllArtists(artistsGrid);
+      
+      // Setup search and filter functionality
+      this.setupArtistFilters();
+      
+      // Complete the loading
+      ui.completeLoadingBar();
+      ui.fadeInContent(document.getElementById('dynamic-content'));
+      this.hideLoading();
+    }, 800);
+  });
+},
+
+loadSearchPage: function(query) {
+  player.currentPage = "search";
+  
+  // Show loading overlay
+  this.showLoading();
+  
+  // Prepare search page content
+  const searchContent = `
+    <div class="page-header px-4 sm:px-6 py-4">
+      <h1 class="text-3xl font-bold mb-6">Search Results: "${query}"</h1>
+      <div class="search-controls mb-6 flex items-center">
+        <div class="search-wrapper relative flex-grow max-w-md">
+          <input type="text" id="search-input" value="${query}" 
+                 class="w-full bg-bg-subtle border border-border-subtle rounded-lg py-2 px-4 pl-10 text-fg-default focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-colors"
+                 placeholder="Search...">
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-fg-muted" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+          </svg>
+        </div>
+        <button id="search-btn" class="ml-2 px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-secondary transition">
+          Search
+        </button>
+      </div>
+      
+      <div class="search-tabs border-b border-border-default">
+        <div class="flex space-x-6">
+          <button class="search-tab active py-2 px-1 border-b-2 border-accent-primary text-accent-primary" data-tab="all">
+            All Results
+          </button>
+          <button class="search-tab py-2 px-1 border-b-2 border-transparent hover:text-accent-primary" data-tab="artists">
+            Artists
+          </button>
+          <button class="search-tab py-2 px-1 border-b-2 border-transparent hover:text-accent-primary" data-tab="albums">
+            Albums
+          </button>
+          <button class="search-tab py-2 px-1 border-b-2 border-transparent hover:text-accent-primary" data-tab="songs">
+            Songs
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="search-results px-4 sm:px-6 py-4">
+      <div class="search-tab-content" id="all-results"></div>
+      <div class="search-tab-content hidden" id="artists-results"></div>
+      <div class="search-tab-content hidden" id="albums-results"></div>
+      <div class="search-tab-content hidden" id="songs-results"></div>
+    </div>
+  `;
+  
+  // Update content (with fade effect)
+  this.updatePageContent(searchContent, () => {
+    // Show skeleton loaders
+    ui.showSkeletonLoader(document.getElementById('all-results'), "80px", 5);
+    
+    // Simulate loading delay for better UX
+    setTimeout(() => {
+      // Perform search
+      this.performSearch(query);
+      
+      // Setup search form
+      const searchInput = document.getElementById('search-input');
+      const searchBtn = document.getElementById('search-btn');
+      
+      if (searchInput && searchBtn) {
+        const handleSearch = () => {
+          const newQuery = searchInput.value.trim();
+          if (newQuery) {
+            window.siteMap.navigateTo('search', { query: newQuery });
+          }
+        };
+        
+        searchBtn.addEventListener('click', handleSearch);
+        
+        searchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            handleSearch();
+          }
+        });
+      }
+      
+      // Setup tabs
+      const tabs = document.querySelectorAll('.search-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // Update active tab
+          tabs.forEach(t => t.classList.remove('active', 'border-accent-primary', 'text-accent-primary'));
+          tab.classList.add('active', 'border-accent-primary', 'text-accent-primary');
+          
+          // Show corresponding content
+          const tabName = tab.dataset.tab;
+          document.querySelectorAll('.search-tab-content').forEach(content => {
+            content.classList.toggle('hidden', content.id !== `${tabName}-results`);
+          });
+        });
+      });
+      
+      // Complete the loading
+      ui.completeLoadingBar();
+      ui.fadeInContent(document.getElementById('dynamic-content'));
+      this.hideLoading();
+    }, 800);
+  });
+},
+
+loadAlbumPage: function(artist, album) {
+  player.currentPage = "album";
+  player.currentArtist = artist;
+  player.currentAlbum = album;
+  
+  // Show loading overlay
+  this.showLoading();
+  
+  // Simulate loading delay for better UX
+  setTimeout(() => {
+    // Prepare album page content
+    const albumContent = `
+      <div class="album-header px-4 sm:px-6 py-6">
+        <div class="flex flex-col md:flex-row gap-8 items-center md:items-start">
+          <div class="album-image-container relative flex-shrink-0">
+            <img src="${helpers.getAlbumImageUrl(album.album)}" alt="${album.album}" class="album-cover w-64 h-64 rounded-xl shadow-lg">
+            <button class="play-album absolute bottom-4 right-4 bg-accent-primary hover:bg-accent-secondary w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition transform hover:scale-110">
+              <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <div class="album-info">
+            <h1 class="text-3xl font-bold mb-2">${album.album}</h1>
+            <div class="artist-link text-accent-primary hover:underline cursor-pointer mb-1" data-nav="artist" data-artist="${artist.artist}">
+              ${artist.artist}
+            </div>
+            <div class="album-meta text-sm text-fg-muted mb-4">
+              ${album.year ? `<span class="album-year">${album.year}</span> • ` : ''}
+              <span class="album-songs">${album.songs.length} ${album.songs.length === 1 ? 'song' : 'songs'}</span>
+            </div>
+            <div class="album-actions flex gap-4 mb-6">
+              <button class="play-all-btn flex items-center gap-2 px-4 py-2 bg-accent-primary hover:bg-accent-secondary text-white rounded-lg transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+                </svg>
+                Play All
+              </button>
+              <button class="shuffle-btn flex items-center gap-2 px-4 py-2 bg-bg-subtle hover:bg-bg-muted text-fg-default rounded-lg transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a1 1 0 10-2 0v6a1 1 0 102 0V5z" />
+                </svg>
+                Shuffle
+              </button>
+              <button class="add-to-queue-btn flex items-center gap-2 px-4 py-2 bg-bg-subtle hover:bg-bg-muted text-fg-default rounded-lg transition">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+                </svg>
+                Add to Queue
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="album-tracks px-4 sm:px-6 py-4">
+        <h2 class="text-xl font-semibold mb-4">Tracks</h2>
+        <div class="songs-container" id="album-songs-container"></div>
+      </div>
+    `;
+    
+    // Update content (with fade effect)
+    this.updatePageContent(albumContent, () => {
+      // Load album cover image with fallback
+      const albumCoverImage = document.querySelector('.album-cover');
+      if (albumCoverImage) {
+        const albumImageUrl = helpers.getAlbumImageUrl(album.album);
+        const fallbackUrl = helpers.getDefaultAlbumImage();
+        helpers.loadImageWithFallback(albumCoverImage, albumImageUrl, fallbackUrl, 'album');
+      }
+      
+      // Render songs
+      const songsContainer = document.getElementById('album-songs-container');
+      if (songsContainer) {
+        album.songs.forEach((song, index) => {
+          const songData = { 
+            ...song, 
+            artist: artist.artist, 
+            album: album.album, 
+            cover: helpers.getAlbumImageUrl(album.album) 
+          };
+          
+          const songHtml = helpers.renderTemplate("songItem", {
+            trackNumber: index + 1,
+            title: song.title,
+            duration: song.duration,
+            id: song.id,
+            songData: JSON.stringify(songData).replace(/"/g, "&quot;"),
+          });
+          
+          songsContainer.insertAdjacentHTML("beforeend", songHtml);
+        });
+      }
+      
+      // Bind events
+      const playAllBtn = document.querySelector('.play-all-btn');
+      const shuffleBtn = document.querySelector('.shuffle-btn');
+      const addToQueueBtn = document.querySelector('.add-to-queue-btn');
+      const playAlbumBtn = document.querySelector('.play-album');
+      
+      if (playAllBtn) {
+        playAllBtn.addEventListener('click', () => this.playAlbum(artist, album, false));
+      }
+      
+      if (shuffleBtn) {
+        shuffleBtn.addEventListener('click', () => this.playAlbum(artist, album, true));
+      }
+      
+      if (addToQueueBtn) {
+        addToQueueBtn.addEventListener('click', () => this.addAlbumToQueue(artist, album));
+      }
+      
+      if (playAlbumBtn) {
+        playAlbumBtn.addEventListener('click', () => this.playAlbum(artist, album, false));
+      }
+      
+      // Complete the loading
+      ui.bindDynamicPageEvents();
+      ui.completeLoadingBar();
+      ui.fadeInContent(document.getElementById('dynamic-content'));
+      this.hideLoading();
+    });
+  }, 800);
+},
+
+
+showLoading: function() {
+  const loadingOverlay = document.getElementById('content-loading');
+  if (loadingOverlay) {
+    loadingOverlay.classList.remove('hidden');
   }
+  ui.showLoadingBar();
+},
+
+hideLoading: function() {
+  const loadingOverlay = document.getElementById('content-loading');
+  if (loadingOverlay) {
+    loadingOverlay.classList.add('hidden');
+  }
+  ui.completeLoadingBar();
+},
+
+clearPageContent: function(callback) {
+  const contentWrapper = document.getElementById('dynamic-content');
+  if (!contentWrapper) {
+    if (callback) callback();
+    return;
+  }
+  
+  // Fade out effect
+  contentWrapper.classList.add('fade-out');
+  
+  // After fade out, clear content and call callback
+  setTimeout(() => {
+    contentWrapper.innerHTML = '';
+    contentWrapper.classList.remove('fade-out');
+    if (callback) callback();
+  }, 300);
+},
+
+updatePageContent: function(newContent, callback) {
+  const contentWrapper = document.getElementById('dynamic-content');
+  if (!contentWrapper) {
+    if (callback) callback();
+    return;
+  }
+  
+  // Fade out current content
+  contentWrapper.classList.add('fade-out');
+  
+  setTimeout(() => {
+    // Update content
+    contentWrapper.innerHTML = newContent;
+    contentWrapper.classList.remove('fade-out');
+    
+    // Fade in new content
+    contentWrapper.classList.add('fade-in');
+    
+    setTimeout(() => {
+      contentWrapper.classList.remove('fade-in');
+      if (callback) callback();
+    }, 300);
+  }, 300);
+},
+
+renderAllArtists: function(container) {
+  if (!container || !window.music) return;
+  
+  container.innerHTML = '';
+  
+  window.music.forEach((artist) => {
+    const artistElement = helpers.createElementFromHTML(
+      `<div class="artist-card" data-artist-id="${artist.id}" data-nav="artist" data-artist="${artist.artist}">
+        <div class="text-center">
+          <div class="artist-avatar w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden">
+            <img src="${helpers.getArtistImageUrl(artist.artist)}" alt="${artist.artist}" class="w-full h-full object-cover">
+          </div>
+          <h3 class="text-lg font-bold mb-2">${artist.artist}</h3>
+          <div class="genre-tag inline-block px-3 py-1 bg-blue-600 bg-opacity-30 rounded-full text-xs font-medium mb-3">${artist.genre || 'Unknown'}</div>
+          <p class="text-sm opacity-70">${artist.albums.length} album${artist.albums.length !== 1 ? 's' : ''}</p>
+        </div>
+      </div>`
+    );
+    
+    // Load artist image with fallback
+    const artistImage = artistElement?.querySelector('.artist-avatar img');
+    if (artistImage) {
+      const artistImageUrl = helpers.getArtistImageUrl(artist.artist);
+      const fallbackUrl = helpers.getDefaultArtistImage();
+      helpers.loadImageWithFallback(artistImage, artistImageUrl, fallbackUrl, 'artist');
+    }
+    
+    if (artistElement) {
+      container.appendChild(artistElement);
+      
+      // Add click event
+      artistElement.addEventListener('dblClick', () => {
+        window.siteMap.navigateTo('artist', { artist: artist.artist });
+      });
+    }
+  });
+},
+
+setupArtistFilters: function() {
+  // Get all genres from music library
+  const genres = new Set();
+  window.music?.forEach(artist => {
+    if (artist.genre) genres.add(artist.genre);
+  });
+  
+  // Populate genre filters
+  const genreFilters = document.getElementById('genre-filters');
+  if (genreFilters) {
+    genreFilters.innerHTML = `<div class="genre-tag active" data-genre="all">All Genres</div>`;
+    
+    Array.from(genres).sort().forEach(genre => {
+      const genreTag = document.createElement('div');
+      genreTag.className = 'genre-tag';
+      genreTag.dataset.genre = genre;
+      genreTag.textContent = genre;
+      genreFilters.appendChild(genreTag);
+    });
+    
+    // Add click event to genre tags
+    genreFilters.querySelectorAll('.genre-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        // Update active state
+        genreFilters.querySelectorAll('.genre-tag').forEach(t => t.classList.remove('active'));
+        tag.classList.add('active');
+        
+        // Filter artists
+        const genre = tag.dataset.genre;
+        this.filterArtistsByGenre(genre);
+      });
+    });
+  }
+  
+  // Setup search input
+  const searchInput = document.getElementById('artist-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      this.filterArtistsBySearch(searchInput.value);
+    });
+  }
+  
+  // Setup view toggles
+  const gridViewBtn = document.getElementById('grid-view-btn');
+  const listViewBtn = document.getElementById('list-view-btn');
+  const artistsGrid = document.getElementById('artists-grid');
+  
+  if (gridViewBtn && listViewBtn && artistsGrid) {
+    gridViewBtn.addEventListener('click', () => {
+      gridViewBtn.classList.add('active', 'bg-accent-primary', 'text-white');
+      listViewBtn.classList.remove('active', 'bg-accent-primary', 'text-white');
+      
+      artistsGrid.classList.remove('list-view');
+      artistsGrid.classList.add('grid-view');
+      
+      localStorage.setItem('artistsViewMode', 'grid');
+    });
+    
+    listViewBtn.addEventListener('click', () => {
+      listViewBtn.classList.add('active', 'bg-accent-primary', 'text-white');
+      gridViewBtn.classList.remove('active', 'bg-accent-primary', 'text-white');
+      
+      artistsGrid.classList.remove('grid-view');
+      artistsGrid.classList.add('list-view');
+      
+      localStorage.setItem('artistsViewMode', 'list');
+    });
+    
+    // Set initial view mode from localStorage
+    const savedViewMode = localStorage.getItem('artistsViewMode') || 'grid';
+    if (savedViewMode === 'list') {
+      listViewBtn.click();
+    } else {
+      gridViewBtn.click();
+    }
+  }
+},
+
+filterArtistsByGenre: function(genre) {
+  const artistsGrid = document.getElementById('artists-grid');
+  const artists = artistsGrid?.querySelectorAll('.artist-card');
+  
+  if (!artistsGrid || !artists) return;
+  
+  if (genre === 'all') {
+    artists.forEach(artist => artist.style.display = '');
+  } else {
+    artists.forEach(artist => {
+      const artistGenre = artist.querySelector('.genre-tag')?.textContent;
+      artist.style.display = artistGenre === genre ? '' : 'none';
+    });
+  }
+},
+
+filterArtistsBySearch: function(query) {
+  if (!query) {
+    // If search is cleared, restore genre filter
+    const activeGenre = document.querySelector('.genre-tag.active')?.dataset.genre || 'all';
+    return this.filterArtistsByGenre(activeGenre);
+  }
+  
+  const artistsGrid = document.getElementById('artists-grid');
+  const artists = artistsGrid?.querySelectorAll('.artist-card');
+  
+  if (!artistsGrid || !artists) return;
+  
+  const searchQuery = query.toLowerCase().trim();
+  
+  artists.forEach(artist => {
+    const artistName = artist.querySelector('h3')?.textContent?.toLowerCase() || '';
+    artist.style.display = artistName.includes(searchQuery) ? '' : 'none';
+  });
+},
+
+performSearch: function(query) {
+  if (!query || !window.music) return;
+  
+  const searchQuery = query.toLowerCase().trim();
+  const results = {
+    artists: [],
+    albums: [],
+    songs: []
+  };
+  
+  // Search artists
+  window.music.forEach(artist => {
+    // Match artist name
+    if (artist.artist.toLowerCase().includes(searchQuery)) {
+      results.artists.push(artist);
+    }
+    
+    // Search albums
+    artist.albums.forEach(album => {
+      if (album.album.toLowerCase().includes(searchQuery)) {
+        results.albums.push({ album, artist });
+      }
+      
+      // Search songs
+      album.songs.forEach(song => {
+        if (song.title.toLowerCase().includes(searchQuery)) {
+          results.songs.push({ 
+            ...song, 
+            artist: artist.artist,
+            album: album.album,
+            cover: helpers.getAlbumImageUrl(album.album)
+          });
+        }
+      });
+    });
+  });
+  
+  // Render results
+  this.renderSearchResults(results, searchQuery);
+},
+
+renderSearchResults: function(results, query) {
+  // Render All Results Tab (a mix of everything)
+  const allResultsContainer = document.getElementById('all-results');
+  if (!allResultsContainer) return;
+  
+  // Prepare all results view
+  let allResultsHTML = '';
+  
+  // First few artists
+  if (results.artists.length > 0) {
+    allResultsHTML += `
+      <div class="search-section mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Artists</h2>
+          <button class="view-all-btn text-sm text-accent-primary hover:underline" data-tab="artists">
+            View all (${results.artists.length})
+          </button>
+        </div>
+        <div class="artists-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          ${results.artists.slice(0, 5).map(artist => `
+            <div class="artist-card cursor-pointer" data-nav="artist" data-artist="${artist.artist}">
+              <div class="text-center">
+                <div class="artist-avatar w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden">
+                  <img src="${helpers.getArtistImageUrl(artist.artist)}" alt="${artist.artist}" class="w-full h-full object-cover">
+                </div>
+                <h3 class="text-sm font-medium truncate">${artist.artist}</h3>
+                <p class="text-xs text-fg-muted">${artist.albums.length} album${artist.albums.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  // First few albums
+  if (results.albums.length > 0) {
+    allResultsHTML += `
+      <div class="search-section mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Albums</h2>
+          <button class="view-all-btn text-sm text-accent-primary hover:underline" data-tab="albums">
+            View all (${results.albums.length})
+          </button>
+        </div>
+        <div class="albums-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          ${results.albums.slice(0, 5).map(item => `
+            <div class="album-grid-item cursor-pointer" data-nav="album" data-artist="${item.artist.artist}" data-album="${item.album.album}">
+              <div class="album-image aspect-square rounded-lg overflow-hidden mb-2">
+                <img src="${helpers.getAlbumImageUrl(item.album.album)}" alt="${item.album.album}" class="w-full h-full object-cover">
+              </div>
+              <h3 class="text-sm font-medium truncate">${item.album.album}</h3>
+              <p class="text-xs text-fg-muted truncate">${item.artist.artist}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  // First few songs
+  if (results.songs.length > 0) {
+    allResultsHTML += `
+      <div class="search-section mb-8">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold">Songs</h2>
+          <button class="view-all-btn text-sm text-accent-primary hover:underline" data-tab="songs">
+            View all (${results.songs.length})
+          </button>
+        </div>
+        <div class="songs-list space-y-1">
+          ${results.songs.slice(0, 5).map(song => `
+            <div class="song-item group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white hover:bg-opacity-5 transition cursor-pointer" data-song='${JSON.stringify(song).replace(/"/g, "&quot;")}'>
+              <div class="flex items-center flex-1 min-w-0 gap-3">
+                <div class="song-cover w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+                  <img src="${song.cover}" alt="${song.title}" class="w-full h-full object-cover">
+                </div>
+                <div class="truncate">
+                  <p class="text-sm font-medium truncate">${song.title}</p>
+                  <div class="flex items-center text-xs text-fg-muted">
+                    <span class="truncate">${song.artist}</span>
+                    <span class="mx-1">•</span>
+                    <span class="truncate">${song.album}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="song-toolbar flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="play-next" title="Play next">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" /></svg>
+                </button>
+                <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="add-queue" title="Add to queue">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" /></svg>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  
+  // No results state
+  if (results.artists.length === 0 && results.albums.length === 0 && results.songs.length === 0) {
+    allResultsHTML = `
+      <div class="empty-results text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-lg font-medium">No results found</h3>
+        <p class="mt-1 text-sm text-fg-muted">We couldn't find anything matching "${query}"</p>
+      </div>
+    `;
+  }
+  
+  allResultsContainer.innerHTML = allResultsHTML;
+  
+  // Render dedicated tabs
+  this.renderArtistsResults(document.getElementById('artists-results'), results.artists, query);
+  this.renderAlbumsResults(document.getElementById('albums-results'), results.albums, query);
+  this.renderSongsResults(document.getElementById('songs-results'), results.songs, query);
+  
+  // Bind events
+  document.querySelectorAll('.view-all-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabToShow = btn.dataset.tab;
+      document.querySelector(`.search-tab[data-tab="${tabToShow}"]`).click();
+    });
+  });
+  
+  // Bind events for navigation
+  document.querySelectorAll('[data-nav]').forEach(item => {
+    item.addEventListener('click', () => {
+      const nav = item.dataset.nav;
+      const params = {};
+      
+      if (nav === 'artist') {
+        params.artist = item.dataset.artist;
+      } else if (nav === 'album') {
+        params.artist = item.dataset.artist;
+        params.album = item.dataset.album;
+      }
+      
+      window.siteMap.navigateTo(nav, params);
+    });
+  });
+  
+  // Bind events for songs
+  document.querySelectorAll('.song-item').forEach(item => {
+    item.addEventListener('dblClick', (e) => {
+      if (!e.target.closest('.song-toolbar')) {
+        try {
+          const songData = JSON.parse(item.dataset.song);
+          player.playSong(songData);
+        } catch (err) {
+          console.error("Failed to parse song data:", err);
+        }
+      }
+    });
+  });
+  
+  // Bind song toolbar buttons
+  document.querySelectorAll('.song-toolbar button').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = button.dataset.action;
+      const songItem = button.closest('.song-item');
+      
+      try {
+        const songData = JSON.parse(songItem.dataset.song);
+        
+        switch (action) {
+          case 'play-next':
+            player.addToQueue(songData, 0);
+            ui.showNotification("Added to play next");
+            break;
+          case 'add-queue':
+            player.addToQueue(songData);
+            ui.showNotification("Added to queue");
+            break;
+        }
+      } catch (err) {
+        console.error("Failed to parse song data:", err);
+      }
+    });
+  });
+},
+
+renderArtistsResults: function(container, artists, query) {
+  if (!container) return;
+  
+  if (artists.length === 0) {
+    container.innerHTML = `
+      <div class="empty-results text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-lg font-medium">No artists found</h3>
+        <p class="mt-1 text-sm text-fg-muted">We couldn't find any artists matching "${query}"</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="artists-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      ${artists.map(artist => `
+        <div class="artist-card cursor-pointer" data-nav="artist" data-artist="${artist.artist}">
+          <div class="text-center">
+            <div class="artist-avatar w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden">
+              <img src="${helpers.getArtistImageUrl(artist.artist)}" alt="${artist.artist}" class="w-full h-full object-cover">
+            </div>
+            <h3 class="text-lg font-bold mb-2">${artist.artist}</h3>
+            <div class="genre-tag inline-block px-3 py-1 bg-blue-600 bg-opacity-30 rounded-full text-xs font-medium mb-3">${artist.genre || 'Unknown'}</div>
+            <p class="text-sm opacity-70">${artist.albums.length} album${artist.albums.length !== 1 ? 's' : ''}</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  // Bind click events
+  container.querySelectorAll('.artist-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const artist = card.dataset.artist;
+      window.siteMap.navigateTo('artist', { artist });
+    });
+  });
+  
+  // Load artist images with fallbacks
+  container.querySelectorAll('.artist-avatar img').forEach(img => {
+    const artistName = img.alt;
+    const artistImageUrl = helpers.getArtistImageUrl(artistName);
+    const fallbackUrl = helpers.getDefaultArtistImage();
+    helpers.loadImageWithFallback(img, artistImageUrl, fallbackUrl, 'artist');
+  });
+},
+
+renderAlbumsResults: function(container, albums, query) {
+  if (!container) return;
+  
+  if (albums.length === 0) {
+    container.innerHTML = `
+      <div class="empty-results text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-lg font-medium">No albums found</h3>
+        <p class="mt-1 text-sm text-fg-muted">We couldn't find any albums matching "${query}"</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `
+    <div class="albums-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      ${albums.map(item => `
+        <div class="album-grid-item cursor-pointer" data-nav="album" data-artist="${item.artist.artist}" data-album="${item.album.album}">
+          <div class="album-image aspect-square rounded-lg overflow-hidden mb-3">
+            <img src="${helpers.getAlbumImageUrl(item.album.album)}" alt="${item.album.album}" class="w-full h-full object-cover">
+          </div>
+          <h3 class="font-medium text-base truncate">${item.album.album}</h3>
+          <p class="text-sm text-fg-muted truncate">${item.artist.artist}</p>
+          ${item.album.year ? `<p class="text-xs text-fg-subtle">${item.album.year}</p>` : ''}
+        </div>
+      `).join('')}
+    </div>
+  `;
+  
+  // Bind click events
+  container.querySelectorAll('.album-grid-item').forEach(album => {
+    album.addEventListener('click', () => {
+      const artist = album.dataset.artist;
+      const albumName = album.dataset.album;
+      window.siteMap.navigateTo('album', { artist, album: albumName });
+    });
+  });
+  
+  // Load album images with fallbacks
+  container.querySelectorAll('.album-image img').forEach(img => {
+    const albumName = img.alt;
+    const albumImageUrl = helpers.getAlbumImageUrl(albumName);
+    const fallbackUrl = helpers.getDefaultAlbumImage();
+    helpers.loadImageWithFallback(img, albumImageUrl, fallbackUrl, 'album');
+  });
+},
+
+renderSongsResults: function(container, songs, query) {
+  if (!container) return;
+  
+  if (songs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-results text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-lg font-medium">No songs found</h3>
+        <p class="mt-1 text-sm text-fg-muted">We couldn't find any songs matching "${query}"</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = `<div class="songs-list space-y-1"></div>`;
+  
+  const songsList = container.querySelector('.songs-list');
+  
+  songs.forEach(song => {
+    const songElement = helpers.createElementFromHTML(`
+      <div class="song-item group flex items-center justify-between px-3 py-3 rounded-lg hover:bg-white hover:bg-opacity-5 transition cursor-pointer" data-song='${JSON.stringify(song).replace(/"/g, "&quot;")}'>
+        <div class="flex items-center flex-1 min-w-0 gap-4">
+          <div class="song-cover w-12 h-12 rounded-md overflow-hidden flex-shrink-0">
+            <img src="${song.cover}" alt="${song.title}" class="w-full h-full object-cover">
+          </div>
+          <div class="truncate">
+            <p class="text-sm font-medium truncate">${song.title}</p>
+            <div class="flex items-center text-xs text-fg-muted mt-1">
+              <span class="truncate">${song.artist}</span>
+              <span class="mx-1">•</span>
+              <span class="truncate">${song.album}</span>
+            </div>
+          </div>
+        </div>
+        <div class="song-toolbar flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="favorite" title="Add to favorites">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+          </button>
+          <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="play-next" title="Play next">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 6v8a1 1 0 001.555.832L10 11.202V14a1 1 0 001.555.832l6-4a1 1 0 000-1.664l-6-4A1 1 0 0010 6v2.798L4.555 5.168z" /></svg>
+          </button>
+          <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="add-queue" title="Add to queue">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" /></svg>
+          </button>
+          <button class="p-1.5 rounded-full hover:bg-white hover:bg-opacity-10" data-action="share" title="Share">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" /></svg>
+          </button>
+        </div>
+      </div>
+    `);
+    
+    // Load song cover with fallback
+    const songImage = songElement?.querySelector('.song-cover img');
+    if (songImage) {
+      const albumImageUrl = helpers.getAlbumImageUrl(song.album);
+      const fallbackUrl = helpers.getDefaultAlbumImage();
+      helpers.loadImageWithFallback(songImage, albumImageUrl, fallbackUrl, 'album');
+    }
+    
+    if (songsList && songElement) songsList.appendChild(songElement);
+  });
+  
+  // Bind events for songs
+  container.querySelectorAll('.song-item').forEach(item => {
+    item.addEventListener('dblClick', (e) => {
+      if (!e.target.closest('.song-toolbar')) {
+        try {
+          const songData = JSON.parse(item.dataset.song);
+          player.playSong(songData);
+        } catch (err) {
+          console.error("Failed to parse song data:", err);
+        }
+      }
+    });
+  });
+  
+  // Bind song toolbar buttons
+  container.querySelectorAll('.song-toolbar button').forEach(button => {
+    button.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const action = button.dataset.action;
+      if (action) ui.handleToolbarAction(action, button);
+    });
+  });
+},
+
+playAlbum: function(artist, album, shuffle) {
+  if (!artist || !album || !album.songs || album.songs.length === 0) return;
+  
+  // Copy the songs array to avoid modifying the original
+  let songs = [...album.songs];
+  
+  // Shuffle if requested
+  if (shuffle) {
+    for (let i = songs.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [songs[i], songs[j]] = [songs[j], songs[i]];
+    }
+    ui.showNotification(`Shuffling ${album.album}`);
+  } else {
+    ui.showNotification(`Playing ${album.album}`);
+  }
+  
+  // Clear queue and add all songs except the first one
+  player.queue = [];
+  for (let i = 1; i < songs.length; i++) {
+    player.addToQueue({ 
+      ...songs[i], 
+      artist: artist.artist, 
+      album: album.album, 
+      cover: helpers.getAlbumImageUrl(album.album) 
+    });
+  }
+  
+  // Play the first song immediately
+  player.playSong({ 
+    ...songs[0], 
+    artist: artist.artist, 
+    album: album.album, 
+    cover: helpers.getAlbumImageUrl(album.album) 
+  });
+},
+
+addAlbumToQueue: function(artist, album) {
+  if (!artist || !album || !album.songs || album.songs.length === 0) return;
+  
+  album.songs.forEach((song) => {
+    player.addToQueue({ 
+      ...song, 
+      artist: artist.artist, 
+      album: album.album, 
+      cover: helpers.getAlbumImageUrl(album.album) 
+    });
+  });
+  
+  ui.showNotification(`Added ${album.songs.length} songs to queue`);
+},
+  
+
+  
 };
+
+
+
+
+
 
 const helpers = {
   getArtistImageUrl: function(artistName) {
@@ -2176,8 +3250,8 @@ const helpers = {
                   </div>
 
                   <div class="action-buttons">
-                    <button class="play">â–¶ï¸ Play All</button>
-                    <button class="follow">â­ Follow</button>
+                    <button class="play">▶️ Play All</button>
+                    <button class="follow">⭐ Follow</button>
                   </div>
                 </div>
               </div>
@@ -2210,7 +3284,7 @@ const helpers = {
               </div>
               <div class="flex-1 artistBottom">
                 <h3 class="text-2xl font-bold mb-2">${data.album}</h3>
-                <p class="text-sm opacity-70 mb-4">${data.year || 'Unknown year'} â€¢ ${data.songCount} Tracks</p>
+                <p class="text-sm opacity-70 mb-4">${data.year || 'Unknown year'} • ${data.songCount} Tracks</p>
                 <div class="songs-container" id="songs-container-${data.albumId}"></div>
               </div>
             </div>
@@ -3091,3 +4165,487 @@ function initializeApp() {
 }
 
 document.addEventListener("DOMContentLoaded", initializeApp);
+
+
+
+
+function addNavigationToMenu() {
+  const dropdownMenu = document.querySelector('#dropdown-menu');
+  if (!dropdownMenu) return;
+  
+  const navigationSection = document.createElement('div');
+  navigationSection.className = 'dropdown-section';
+  navigationSection.innerHTML = `
+    <h3 class="section-title">
+      <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+      </svg>
+      Navigation
+    </h3>
+    <div class="dropdown-item" data-nav="home">
+      <div class="dropdown-item-icon">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+        </svg>
+      </div>
+      <div class="dropdown-item-content">
+        <p class="dropdown-item-title">Home</p>
+        <p class="dropdown-item-subtitle">Featured music and new releases</p>
+      </div>
+    </div>
+    <div class="dropdown-item" data-nav="allArtists">
+      <div class="dropdown-item-icon">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+        </svg>
+      </div>
+      <div class="dropdown-item-content">
+        <p class="dropdown-item-title">All Artists</p>
+        <p class="dropdown-item-subtitle">Browse all artists in the library</p>
+      </div>
+    </div>
+  `;
+  
+  // Add search option
+  navigationSection.innerHTML += `
+    <div class="dropdown-item" id="global-search-trigger">
+      <div class="dropdown-item-icon">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="dropdown-item-content">
+        <p class="dropdown-item-title">Search</p>
+        <p class="dropdown-item-subtitle">Find artists, albums, and songs</p>
+      </div>
+    </div>
+  `;
+  
+  // Insert after first section
+  const firstSection = dropdownMenu.querySelector('.dropdown-section');
+  if (firstSection) {
+    firstSection.after(navigationSection);
+  } else {
+    dropdownMenu.appendChild(navigationSection);
+  }
+  
+  // Add global search functionality
+  const searchTrigger = document.getElementById('global-search-trigger');
+  if (searchTrigger) {
+    searchTrigger.addEventListener('click', () => {
+      navbar.closeDropdownMenu();
+      
+      // Show search dialog
+      const searchDialog = document.createElement('div');
+      searchDialog.className = 'search-dialog fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm z-[999] flex items-center justify-center p-4';
+      searchDialog.innerHTML = `
+        <div class="search-dialog-content w-full max-w-lg bg-bg-default border border-border-default rounded-2xl shadow-lg p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold">Search</h2>
+            <button class="close-search-dialog p-2 hover:bg-bg-subtle rounded-full">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <form id="global-search-form">
+            <div class="relative">
+              <input type="text" id="global-search-input" 
+                     class="w-full bg-bg-subtle border border-border-subtle rounded-lg py-3 px-4 pl-10 text-fg-default focus:outline-none focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-colors"
+                     placeholder="Search for artists, albums, or songs..." autofocus>
+              <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-fg-muted" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="mt-4 flex justify-end">
+              <button type="submit" class="px-4 py-2 bg-accent-primary text-white rounded-lg hover:bg-accent-secondary transition">
+                Search
+              </button>
+            </div>
+          </form>
+        </div>
+      `;
+      
+      document.body.appendChild(searchDialog);
+      document.getElementById('global-search-input').focus();
+      
+      // Close dialog when clicking outside
+      searchDialog.addEventListener('click', (e) => {
+        if (e.target === searchDialog) {
+          document.body.removeChild(searchDialog);
+        }
+      });
+      
+      // Close button
+      const closeBtn = searchDialog.querySelector('.close-search-dialog');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+          document.body.removeChild(searchDialog);
+        });
+      }
+      
+      // Handle search form submission
+      const searchForm = document.getElementById('global-search-form');
+      if (searchForm) {
+        searchForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const searchInput = document.getElementById('global-search-input');
+          if (searchInput && searchInput.value.trim()) {
+            window.siteMap.navigateTo('search', { query: searchInput.value.trim() });
+            document.body.removeChild(searchDialog);
+          }
+        });
+      }
+    });
+  }
+}
+
+
+
+// SiteMap class - handles navigation and URL mapping
+class SiteMap {
+  constructor() {
+    this.routes = {
+      home: {
+        pattern: /^\/$/,
+        handler: () => pageManager.loadHomePage()
+      },
+      artist: {
+        pattern: /^\/artist\/(.+)$/,
+        handler: (params) => {
+          const artistName = params.artist || this.getParameterByName('artist', window.location.href);
+          const artistData = window.music?.find(a => a.artist === artistName);
+          if (artistData) {
+            pageManager.loadArtistPage(artistData);
+          } else {
+            ui.showNotification(`Artist "${artistName}" not found`, 'error');
+            this.navigateTo('home');
+          }
+        }
+      },
+      allArtists: {
+        pattern: /^\/artists$/,
+        handler: () => pageManager.loadAllArtistsPage()
+      },
+      album: {
+        pattern: /^\/artist\/(.+)\/album\/(.+)$/,
+        handler: (params) => {
+          const artistName = params.artist || this.getParameterByName('artist', window.location.href);
+          const albumName = params.album || this.getParameterByName('album', window.location.href);
+          
+          const artistData = window.music?.find(a => a.artist === artistName);
+          if (artistData) {
+            const albumData = artistData.albums.find(a => a.album === albumName);
+            if (albumData) {
+              pageManager.loadAlbumPage(artistData, albumData);
+            } else {
+              ui.showNotification(`Album "${albumName}" not found`, 'error');
+              this.navigateTo('artist', { artist: artistName });
+            }
+          } else {
+            ui.showNotification(`Artist "${artistName}" not found`, 'error');
+            this.navigateTo('home');
+          }
+        }
+      },
+      search: {
+        pattern: /^\/search\?q=(.+)$/,
+        handler: (params) => {
+          const query = params.query || this.getParameterByName('q', window.location.href);
+          if (query) {
+            pageManager.loadSearchPage(query);
+          } else {
+            ui.showNotification('Please enter a search query', 'error');
+            this.navigateTo('home');
+          }
+        }
+      }
+    };
+    
+    // Handle initial route based on URL
+    this.handleInitialRoute();
+    
+    // Listen for popstate events (back/forward browser navigation)
+    window.addEventListener('popstate', (event) => {
+      this.handleRoute(window.location.pathname + window.location.search);
+    });
+    
+    // Bind click events for navigation
+    this.bindNavigationEvents();
+  }
+  
+  handleInitialRoute() {
+    const path = window.location.pathname + window.location.search;
+    this.handleRoute(path);
+  }
+  
+  handleRoute(path) {
+    let matchedRoute = false;
+    
+    for (const key in this.routes) {
+      const route = this.routes[key];
+      const match = path.match(route.pattern);
+      
+      if (match) {
+        // Extract parameters from the route
+        const params = {};
+        
+        if (key === 'search') {
+          params.query = this.getParameterByName('q', window.location.href);
+        } else if (key === 'artist') {
+          params.artist = decodeURIComponent(match[1]);
+        } else if (key === 'album') {
+          params.artist = decodeURIComponent(match[1]);
+          params.album = decodeURIComponent(match[2]);
+        }
+        
+        // Call the route handler
+        route.handler(params);
+        matchedRoute = true;
+        break;
+      }
+    }
+    
+    // If no route matched, go to home page
+    if (!matchedRoute) {
+      pageManager.loadHomePage();
+    }
+  }
+  
+  navigateTo(routeName, params = {}) {
+    let url;
+    
+    switch (routeName) {
+      case 'home':
+        url = '/';
+        break;
+      case 'artist':
+        url = `/artist/${encodeURIComponent(params.artist)}`;
+        break;
+      case 'allArtists':
+        url = '/artists';
+        break;
+      case 'album':
+        url = `/artist/${encodeURIComponent(params.artist)}/album/${encodeURIComponent(params.album)}`;
+        break;
+      case 'search':
+        url = `/search?q=${encodeURIComponent(params.query)}`;
+        break;
+      default:
+        url = '/';
+    }
+    
+    // Update browser history
+    window.history.pushState({}, '', url);
+    
+    // Call the route handler
+    if (this.routes[routeName]) {
+      this.routes[routeName].handler(params);
+    }
+  }
+  
+  getParameterByName(name, url) {
+    name = name.replace(/[\[\]]/g, '\\$&');
+    const regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)');
+    const results = regex.exec(url);
+    if (!results) return null;
+    if (!results[2]) return '';
+    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+  }
+  
+  bindNavigationEvents() {
+    // Bind click events for navigation items with data-nav attribute
+    document.addEventListener('click', (e) => {
+      const navItem = e.target.closest('[data-nav]');
+      if (!navItem) return;
+      
+      e.preventDefault();
+      const navType = navItem.dataset.nav;
+      const params = {};
+      
+      if (navType === 'artist') {
+        params.artist = navItem.dataset.artist;
+        this.navigateTo('artist', params);
+      } else if (navType === 'allArtists') {
+        this.navigateTo('allArtists');
+      } else if (navType === 'album') {
+        params.artist = navItem.dataset.artist;
+        params.album = navItem.dataset.album;
+        this.navigateTo('album', params);
+      } else if (navType === 'home') {
+        this.navigateTo('home');
+      }
+    });
+    
+    // Handle search form submissions
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'global-search-trigger') {
+        this.openSearchDialog();
+      }
+    });
+  }
+  
+  openSearchDialog() {
+    // Create search dialog if it doesn't exist
+    if (!document.getElementById('search-dialog')) {
+      const searchDialog = document.createElement('div');
+      searchDialog.id = 'search-dialog';
+      searchDialog.className = 'fixed inset-0 z-[1000] flex items-start justify-center pt-[15vh] search-dialog';
+      searchDialog.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      searchDialog.style.backdropFilter = 'blur(4px)';
+      
+      searchDialog.innerHTML = `
+        <div class="search-dialog-content bg-bg-default border border-border-default rounded-xl w-full max-w-2xl shadow-xl overflow-hidden">
+          <form id="global-search-form" class="relative">
+            <input type="text" id="global-search-input" placeholder="Search for artists, albums, or songs..." 
+                   class="w-full py-4 px-5 text-lg text-fg-default bg-bg-subtle border-none focus:outline-none focus:ring-0">
+            <button type="submit" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-accent-primary hover:bg-accent-secondary text-white p-2 rounded-md">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+              </svg>
+            </button>
+          </form>
+          
+          <div class="recent-searches px-5 py-4 border-t border-border-muted">
+            <h3 class="text-sm font-medium text-fg-muted mb-2">Recent Searches</h3>
+            <div id="recent-searches-list" class="space-y-2">
+              <p class="text-sm text-fg-subtle">No recent searches</p>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(searchDialog);
+      
+      // Close dialog when clicking outside
+      searchDialog.addEventListener('click', (e) => {
+        if (e.target === searchDialog) {
+          this.closeSearchDialog();
+        }
+      });
+      
+      // Handle search form submission
+      const searchForm = document.getElementById('global-search-form');
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const query = document.getElementById('global-search-input').value.trim();
+        if (query) {
+          this.closeSearchDialog();
+          this.navigateTo('search', { query });
+          
+          // Save to recent searches
+          this.addRecentSearch(query);
+        }
+      });
+      
+      // Handle escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !document.getElementById('search-dialog').classList.contains('hidden')) {
+          this.closeSearchDialog();
+        }
+      });
+      
+      // Load recent searches
+      this.updateRecentSearchesList();
+    }
+    
+    // Show the dialog
+    document.getElementById('search-dialog').classList.remove('hidden');
+    document.getElementById('global-search-input').focus();
+    
+    // Disable scrolling on body
+    document.body.style.overflow = 'hidden';
+  }
+  
+  closeSearchDialog() {
+    const dialog = document.getElementById('search-dialog');
+    if (dialog) {
+      dialog.classList.add('hidden');
+    }
+    
+    // Re-enable scrolling on body
+    document.body.style.overflow = '';
+  }
+  
+  addRecentSearch(query) {
+    let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    
+    // Remove if already exists (to avoid duplicates)
+    recentSearches = recentSearches.filter(item => item !== query);
+    
+    // Add new search at the beginning
+    recentSearches.unshift(query);
+    
+    // Keep only the last 5 searches
+    recentSearches = recentSearches.slice(0, 5);
+    
+    // Save back to localStorage
+    localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+    
+    // Update UI
+    this.updateRecentSearchesList();
+  }
+  
+  updateRecentSearchesList() {
+    const list = document.getElementById('recent-searches-list');
+    if (!list) return;
+    
+    const recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+    
+    if (recentSearches.length === 0) {
+      list.innerHTML = `<p class="text-sm text-fg-subtle">No recent searches</p>`;
+      return;
+    }
+    
+    list.innerHTML = recentSearches.map(query => `
+      <div class="recent-search-item flex justify-between items-center group">
+        <button class="recent-search-btn text-sm py-1 text-fg-default hover:text-accent-primary flex-grow text-left truncate" data-query="${query}">
+          <span class="inline-block mr-2 opacity-60">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+          </span>
+          ${query}
+        </button>
+        <button class="remove-search-btn p-1.5 opacity-0 group-hover:opacity-100 transition-opacity" data-query="${query}">
+          <svg class="w-3.5 h-3.5 text-fg-muted hover:text-fg-default" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
+      </div>
+    `).join('');
+    
+    // Bind click events for recent search items
+    list.querySelectorAll('.recent-search-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const query = btn.dataset.query;
+        this.closeSearchDialog();
+        this.navigateTo('search', { query });
+      });
+    });
+    
+    // Bind click events for remove buttons
+    list.querySelectorAll('.remove-search-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const query = btn.dataset.query;
+        
+        // Remove from localStorage
+        let recentSearches = JSON.parse(localStorage.getItem('recentSearches') || '[]');
+        recentSearches = recentSearches.filter(item => item !== query);
+        localStorage.setItem('recentSearches', JSON.stringify(recentSearches));
+        
+        // Update UI
+        this.updateRecentSearchesList();
+      });
+    });
+  }
+}
+
+// Initialize SiteMap
+document.addEventListener('DOMContentLoaded', () => {
+  window.siteMap = new SiteMap();
+  
+  addNavigationToMenu();
+});
