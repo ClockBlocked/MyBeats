@@ -1,6 +1,6 @@
 import { music } from '../library.js';
-import { queueItem, artistCard, enhancedArtist, singleAlbumCard, songItem, searchDialog, songElement } from './pageTemplates.js';
 
+// Initialize music library
 function initializeMusicLibrary() {
   window.music = music;
   console.log(`Music library loaded: ${window.music.length} artists`);
@@ -22,7 +22,7 @@ const player = {
   loadingTimer: null,
   currentPage: "home",
   shuffleMode: false,
-  repeatMode: "off",
+  repeatMode: "off", // "off", "one", "all"
   rewindInterval: 10,
   fastForwardInterval: 30,
   
